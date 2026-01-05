@@ -109,9 +109,6 @@ intelligent-embedded-dashboard/
 ## Configuration
 
 ### App Configuration
-Set up in the `App Configuration`: 
-Edit > Configure Resources > User Authorization > Add Scope > Manage your model serving endpoints
-(More information [here](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth#add-scopes-to-an-app))
 
 Update these values in `app.py`:
 ```python
@@ -119,6 +116,13 @@ DATABRICKS_TOKEN = 'your_token_here'
 DATABRICKS_HOST = "https://your-workspace.cloud.databricks.com"
 WAREHOUSE_ID = "your_warehouse_id"
 ```
+
+### Configure App Permissions** (Required):
+   - Navigate to your deployed app
+   - Click **Edit** > **Configure Resources** > **User Authorization**
+   - Click **Add Scope**
+   - Select **"Manage your model serving endpoints"**
+   - Save configuration
 
 ### MLflow Experiment Path
 The app automatically logs AI generation traces to:
