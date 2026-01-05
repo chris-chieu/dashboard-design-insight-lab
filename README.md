@@ -1,4 +1,4 @@
-# Intelligent Embedded Dashboard
+# Dashboard Design Insight Lab
 
 An AI-powered Dash application that automatically generates Databricks AI/BI dashboards using LLMs. Create beautiful, data-driven dashboards with natural language prompts.
 
