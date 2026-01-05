@@ -109,8 +109,8 @@ intelligent-embedded-dashboard/
 ## Configuration
 
 ### App Configuration
-Set up in the App Configuration: 
-Configure Resources > User Authorization > Add Scope > Manage your model serving endpoints
+Set up in the `App Configuration`: 
+Edit > Configure Resources > User Authorization > Add Scope > Manage your model serving endpoints
 
 Update these values in `app.py`:
 ```python
