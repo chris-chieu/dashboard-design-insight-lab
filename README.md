@@ -111,6 +111,7 @@ intelligent-embedded-dashboard/
 ### App Configuration
 Set up in the `App Configuration`: 
 Edit > Configure Resources > User Authorization > Add Scope > Manage your model serving endpoints
+(More information [here](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/auth#add-scopes-to-an-app))
 
 Update these values in `app.py`:
 ```python
