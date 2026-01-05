@@ -1,0 +1,8 @@
+# Databricks Apps Configuration
+# This tells Databricks Apps to run app.py as the entry point
+
+command: ["python", "app.py"]
+
+# Alternatively, you can specify:
+# entrypoint: app.py
+
