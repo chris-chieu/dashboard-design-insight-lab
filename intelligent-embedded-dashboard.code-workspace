@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../embedded-dashboards-app"
+		},
+		{
+			"path": "../dbdemos-genai-agent-support/dbdemos-genai-agent-support"
+		},
+		{
+			"path": "../app-documents-ingestion"
+		}
+	],
+	"settings": {
+		"jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
+		"jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------"
+	}
+}

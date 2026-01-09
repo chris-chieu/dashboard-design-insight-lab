@@ -1,0 +1,53 @@
+/* Prevent flashing during progress updates */
+#ai-generation-progress,
+#ai-generation-reasoning,
+#ai-generation-widgets {
+    min-height: 50px;
+    contain: layout style;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+/* Stable rendering for all containers */
+#ai-generation-progress > div,
+#ai-generation-reasoning > div,
+#ai-generation-widgets > div {
+    will-change: contents;
+    contain: layout;
+}
+
+/* Smooth updates for cards without flash */
+#ai-generation-progress .card,
+#ai-generation-reasoning .card,
+#ai-generation-widgets .card {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+/* Prevent layout shift on text updates */
+#ai-generation-progress .card-body,
+#ai-generation-reasoning .card-body,
+#ai-generation-widgets .card-body {
+    contain: layout;
+}
+
+/* Smooth appearance for new content */
+#ai-generation-reasoning .card,
+#ai-generation-widgets .card {
+    animation: smoothFadeIn 0.4s ease-in-out;
+}
+
+@keyframes smoothFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
