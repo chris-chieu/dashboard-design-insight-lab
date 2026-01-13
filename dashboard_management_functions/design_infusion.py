@@ -2,6 +2,7 @@
 Design Infusion Module
 
 Extracts design elements (colors and fonts) from uploaded images using Vision LLM.
+Includes intelligent analysis and iterative refinement capabilities.
 """
 
 import json
@@ -392,4 +393,568 @@ IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks
             html.Small(f"Error: {str(e)}")
         ], color="danger")
         return error_msg, None
+
+
+def analyze_dashboard_layout(dashboard_config):
+    """
+    Analyze the current dashboard configuration to extract layout information.
+    
+    Args:
+        dashboard_config: Dashboard configuration dict (with serialized_dashboard)
+        
+    Returns:
+        dict: Analysis with widget counts, current colors, layout structure
+    """
+    try:
+        # Extract serialized_dashboard if wrapped
+        if 'serialized_dashboard' in dashboard_config:
+            config = dashboard_config['serialized_dashboard']
+            if isinstance(config, str):
+                config = json.loads(config)
+        else:
+            config = dashboard_config
+        
+        # Extract layout information
+        layout = config.get('pages', [{}])[0].get('layout', [])
+        
+        # Count widget types
+        widget_counts = {}
+        widget_details = []
+        
+        for item in layout:
+            widget = item.get('widget', {})
+            position = item.get('position', {})
+            
+            # Determine widget type
+            widget_type = "Unknown"
+            if 'tableSpec' in widget:
+                widget_type = "Table"
+            elif 'filterSpec' in widget:
+                widget_type = "Filter"
+            elif 'chartSpec' in widget:
+                chart_type = widget['chartSpec'].get('type', 'Unknown')
+                widget_type = f"{chart_type.capitalize()} Chart"
+            elif 'counterSpec' in widget:
+                widget_type = "Counter (KPI)"
+            elif 'pivotSpec' in widget:
+                widget_type = "Pivot Table"
+            elif 'multilineTextboxSpec' in widget:
+                widget_type = "Text/Spacer"
+            
+            # Count
+            widget_counts[widget_type] = widget_counts.get(widget_type, 0) + 1
+            
+            # Store details
+            widget_details.append({
+                'type': widget_type,
+                'position': position,
+                'name': widget.get('name', 'N/A')
+            })
+        
+        # Extract current theme if exists
+        current_theme = config.get('uiSettings', {}).get('theme', {})
+        current_colors = {
+            'canvasBackground': current_theme.get('canvasBackgroundColor', {}).get('light', '#FAFAFB'),
+            'widgetBackground': current_theme.get('widgetBackgroundColor', {}).get('light', '#FFFFFF'),
+            'widgetBorder': current_theme.get('widgetBorderColor', {}).get('light', '#E0E0E0'),
+            'fontColor': current_theme.get('fontColor', {}).get('light', '#11171C'),
+            'visualizationColors': current_theme.get('visualizationColors', []),
+            'fontFamily': current_theme.get('fontFamily', 'Arial')
+        }
+        
+        # Calculate layout metrics
+        max_y = max([item.get('position', {}).get('y', 0) + item.get('position', {}).get('height', 0) for item in layout]) if layout else 0
+        max_x = max([item.get('position', {}).get('x', 0) + item.get('position', {}).get('width', 0) for item in layout]) if layout else 0
+        
+        analysis = {
+            'total_widgets': len(layout),
+            'widget_counts': widget_counts,
+            'widget_details': widget_details,
+            'current_colors': current_colors,
+            'layout_dimensions': {
+                'max_y': max_y,
+                'max_x': max_x,
+                'estimated_rows': max_y // 2  # Rough estimate
+            },
+            'has_filters': 'Filter' in widget_counts,
+            'has_kpis': 'Counter (KPI)' in widget_counts,
+            'has_charts': any('Chart' in wtype for wtype in widget_counts.keys()),
+            'has_tables': 'Table' in widget_counts or 'Pivot Table' in widget_counts
+        }
+        
+        return analysis
+        
+    except Exception as e:
+        print(f"Error analyzing dashboard layout: {e}")
+        return {
+            'error': str(e),
+            'total_widgets': 0,
+            'widget_counts': {},
+            'current_colors': {}
+        }
+
+
+def generate_design_with_analysis(prompt_text, dashboard_config, llm_client):
+    """
+    Generate design with AI reasoning based on dashboard analysis and user prompt.
+    This is a multi-step process that returns analysis and reasoning before applying.
+    
+    Args:
+        prompt_text: User's design description
+        dashboard_config: Current dashboard configuration
+        llm_client: OpenAI client instance
+        
+    Returns:
+        tuple: (analysis_display, reasoning_display, design_data, analysis_text, reasoning_text)
+    """
+    if not prompt_text or not prompt_text.strip():
+        return "", "", None, None, None
+    
+    try:
+        # Step 1: Analyze current dashboard
+        print("🔍 Step 1: Analyzing current dashboard layout...")
+        analysis = analyze_dashboard_layout(dashboard_config)
+        
+        # Create analysis display
+        analysis_display = html.Div([
+            html.H6("📊 Dashboard Analysis", className="mb-3"),
+            dbc.Card([
+                dbc.CardBody([
+                    html.P([
+                        html.Strong("Total Widgets: "),
+                        html.Span(str(analysis['total_widgets']))
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Widget Types: "),
+                        html.Ul([
+                            html.Li(f"{wtype}: {count}") 
+                            for wtype, count in analysis.get('widget_counts', {}).items()
+                        ])
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Current Colors: "),
+                        html.Ul([
+                            html.Li(f"Canvas: {analysis['current_colors'].get('canvasBackground', 'N/A')}"),
+                            html.Li(f"Widgets: {analysis['current_colors'].get('widgetBackground', 'N/A')}"),
+                            html.Li(f"Font: {analysis['current_colors'].get('fontColor', 'N/A')}"),
+                            html.Li(f"Font Family: {analysis['current_colors'].get('fontFamily', 'N/A')}")
+                        ])
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Layout Structure: "),
+                        html.Span(f"~{analysis['layout_dimensions'].get('estimated_rows', 0)} rows, ")
+                    ] + [
+                        html.Span(f"{'✓ Filters' if analysis.get('has_filters') else ''} "),
+                        html.Span(f"{'✓ KPIs' if analysis.get('has_kpis') else ''} "),
+                        html.Span(f"{'✓ Charts' if analysis.get('has_charts') else ''} "),
+                        html.Span(f"{'✓ Tables' if analysis.get('has_tables') else ''} ")
+                    ], className="mb-2")
+                ])
+            ], color="light", className="mb-3")
+        ])
+        
+        # Create analysis text for LLM
+        analysis_text = f"""Dashboard Structure Analysis:
+- Total widgets: {analysis['total_widgets']}
+- Widget types: {', '.join([f'{k} ({v})' for k, v in analysis.get('widget_counts', {}).items()])}
+- Current colors: Canvas {analysis['current_colors'].get('canvasBackground')}, Widgets {analysis['current_colors'].get('widgetBackground')}, Font {analysis['current_colors'].get('fontColor')}
+- Current font: {analysis['current_colors'].get('fontFamily')}
+- Layout: ~{analysis['layout_dimensions'].get('estimated_rows', 0)} rows with {'filters, ' if analysis.get('has_filters') else ''}{'KPIs, ' if analysis.get('has_kpis') else ''}{'charts, ' if analysis.get('has_charts') else ''}{'tables' if analysis.get('has_tables') else ''}"""
+        
+        # Step 2: Generate design with reasoning
+        print("🎨 Step 2: Generating design with AI reasoning...")
+        
+        reasoning_prompt = f"""You are an expert dashboard designer. You have analyzed the current dashboard and received a design request from the user.
+
+CURRENT DASHBOARD ANALYSIS:
+{analysis_text}
+
+USER'S DESIGN REQUEST:
+"{prompt_text}"
+
+Your task is to:
+1. First, provide feedback on the CURRENT dashboard design
+2. Then, create a new design that fulfills the user's request
+
+Please provide your response in THREE parts:
+
+PART 1 - CURRENT STYLE FEEDBACK:
+Evaluate the current dashboard design:
+- What works well in the current design? (colors, contrast, readability)
+- What could be improved? (specific issues with current colors, font, etc.)
+- How does the current design impact the dashboard's usability?
+- Overall impression of the current style (professional, casual, cluttered, clean, etc.)
+
+PART 2 - NEW DESIGN REASONING:
+Explain your new design choices:
+- How does the user's request translate to visual design?
+- What specific changes address the issues you identified?
+- What color palette best represents this style?
+- How will these colors enhance readability for the {analysis['total_widgets']} widgets present?
+- What font choice complements this aesthetic and why?
+- Any special considerations for this dashboard's layout?
+
+PART 3 - DESIGN SPECIFICATION (JSON):
+Return the complete response as JSON in this EXACT format:
+
+{{
+    "current_style_feedback": "Your evaluation of the current design from Part 1",
+    "reasoning": "Your new design reasoning from Part 2",
+    "design": {{
+        "canvasBackgroundColor": "#HEXCODE",
+        "widgetBackgroundColor": "#HEXCODE",
+        "widgetBorderColor": "#HEXCODE",
+        "fontColor": "#HEXCODE",
+        "visualizationColors": ["#HEX1", "#HEX2", "#HEX3", "#HEX4", "#HEX5", "#HEX6", "#HEX7", "#HEX8"],
+        "fontFamily": "Font Name"
+    }}
+}}
+
+CRITICAL RULES:
+1. Visualization colors MUST be clearly distinguishable (different hues, not just shades)
+2. NEVER use white or very light colors (lightness > 90%) for visualizations if background is white
+3. Ensure high contrast between text and background for readability
+4. Font family MUST be one of: Arial, Brush Script MT, Courier New, Georgia, Impact, Tahoma, Times New Roman, Trebuchet MS, Verdana
+5. Consider the dashboard has {analysis['total_widgets']} widgets - colors should work at scale
+6. Be specific and constructive in your current design feedback
+
+IMPORTANT: Return ONLY valid JSON without markdown formatting."""
+
+        # Call LLM for reasoning + design
+        response = llm_client.chat.completions.create(
+            model="databricks-gpt-5",
+            messages=[
+                {
+                    "role": "user",
+                    "content": reasoning_prompt
+                }
+            ],
+            max_tokens=1000
+        )
+        
+        # Parse LLM response
+        llm_response = response.choices[0].message.content.strip()
+        
+        # Clean up markdown if present
+        if llm_response.startswith('```'):
+            lines = llm_response.split('\n')
+            llm_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else llm_response
+        
+        response_data = json.loads(llm_response)
+        current_style_feedback = response_data.get('current_style_feedback', 'No feedback provided')
+        reasoning_text = response_data.get('reasoning', 'No reasoning provided')
+        design_data = response_data.get('design', {})
+        
+        # Build UI settings
+        ui_settings = {
+            "uiSettings": {
+                "theme": {
+                    "canvasBackgroundColor": {
+                        "light": design_data.get('canvasBackgroundColor', '#FAFAFB'),
+                        "dark": "#1F272D"
+                    },
+                    "widgetBackgroundColor": {
+                        "light": design_data.get('widgetBackgroundColor', '#FFFFFF'),
+                        "dark": "#11171C"
+                    },
+                    "widgetBorderColor": {
+                        "light": design_data.get('widgetBorderColor', '#E0E0E0')
+                    },
+                    "fontColor": {
+                        "light": design_data.get('fontColor', '#11171C'),
+                        "dark": "#E8ECF0"
+                    },
+                    "selectionColor": {
+                        "light": "#2272B4",
+                        "dark": "#8ACAFF"
+                    },
+                    "visualizationColors": design_data.get('visualizationColors', [
+                        "#077A9D", "#FFAB00", "#00A972", "#FF3621", "#8BCAE7"
+                    ]),
+                    "widgetHeaderAlignment": "LEFT",
+                    "fontFamily": design_data.get('fontFamily', 'Arial')
+                },
+                "genieSpace": {
+                    "isEnabled": False,
+                    "enablementMode": "DISABLED"
+                },
+                "applyModeEnabled": False
+            }
+        }
+        
+        # Create reasoning display
+        reasoning_display = html.Div([
+            html.H6("💡 AI Design Analysis & Reasoning", className="mb-3"),
+            
+            # Current Style Feedback Section
+            dbc.Card([
+                dbc.CardHeader(html.H6("🔍 Current Dashboard Style Feedback", className="mb-0")),
+                dbc.CardBody([
+                    html.P(current_style_feedback, className="mb-0", style={'whiteSpace': 'pre-wrap'})
+                ])
+            ], color="light", className="mb-3"),
+            
+            # New Design Reasoning Section
+            dbc.Card([
+                dbc.CardHeader(html.H6("✨ New Design Reasoning", className="mb-0")),
+                dbc.CardBody([
+                    html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
+                    html.Hr(),
+                    html.H6("🎨 Generated Design Colors:", className="mb-2"),
+                    html.P([
+                        html.Strong("Canvas: "),
+                        html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 
+                                 style={'backgroundColor': design_data.get('canvasBackgroundColor', '#FFF'), 
+                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px'})
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Widgets: "),
+                        html.Span(design_data.get('widgetBackgroundColor', 'N/A'),
+                                 style={'backgroundColor': design_data.get('widgetBackgroundColor', '#FFF'), 
+                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px', 'border': '1px solid #ddd'})
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Font: "),
+                        html.Span(f"{design_data.get('fontColor', 'N/A')} ({design_data.get('fontFamily', 'N/A')})")
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Visualization Colors: "),
+                        html.Div([
+                            html.Span(
+                                color,
+                                style={
+                                    'backgroundColor': color,
+                                    'padding': '5px 15px',
+                                    'margin': '2px',
+                                    'borderRadius': '3px',
+                                    'display': 'inline-block',
+                                    'color': '#FFF',
+                                    'fontSize': '11px',
+                                    'border': '1px solid #ddd'
+                                }
+                            ) for color in design_data.get('visualizationColors', [])
+                        ])
+                    ], className="mb-2")
+                ])
+            ], color="success", outline=True)
+        ])
+        
+        print("✅ Design generated with reasoning")
+        return analysis_display, reasoning_display, ui_settings, analysis_text, reasoning_text
+        
+    except json.JSONDecodeError as e:
+        error_msg = dbc.Alert([
+            html.Strong("❌ Failed to parse AI response"),
+            html.Br(),
+            html.Small(f"Error: {str(e)}")
+        ], color="danger")
+        return error_msg, "", None, None, None
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        error_msg = dbc.Alert([
+            html.Strong("❌ Error during design generation"),
+            html.Br(),
+            html.Small(f"Error: {str(e)}")
+        ], color="danger")
+        return error_msg, "", None, None, None
+
+
+def refine_design_from_feedback(original_prompt, feedback_prompt, previous_reasoning, previous_design, dashboard_config, llm_client):
+    """
+    Refine the design based on user feedback, incorporating previous reasoning.
+    
+    Args:
+        original_prompt: Original user design request
+        feedback_prompt: User's refinement feedback
+        previous_reasoning: Previous AI reasoning
+        previous_design: Previous design specification (dict)
+        dashboard_config: Current dashboard configuration
+        llm_client: OpenAI client instance
+        
+    Returns:
+        tuple: (reasoning_display, design_data, reasoning_text)
+    """
+    if not feedback_prompt or not feedback_prompt.strip():
+        return "", None, None
+    
+    try:
+        # Get dashboard analysis
+        analysis = analyze_dashboard_layout(dashboard_config)
+        analysis_text = f"""Dashboard: {analysis['total_widgets']} widgets with {', '.join([f'{k} ({v})' for k, v in analysis.get('widget_counts', {}).items()])}"""
+        
+        # Build refinement prompt
+        refinement_prompt = f"""You are an expert dashboard designer. You previously created a design, and the user has provided feedback for refinement.
+
+DASHBOARD CONTEXT:
+{analysis_text}
+
+ORIGINAL USER REQUEST:
+"{original_prompt}"
+
+YOUR PREVIOUS REASONING:
+{previous_reasoning}
+
+YOUR PREVIOUS DESIGN:
+{json.dumps(previous_design, indent=2)}
+
+USER'S REFINEMENT FEEDBACK:
+"{feedback_prompt}"
+
+Based on the user's feedback, refine your design. Explain what you're changing and why, then provide the updated design.
+
+Return your response in this EXACT JSON format:
+
+{{
+    "reasoning": "Explain what feedback you received, what you're changing, and why this refinement improves the design",
+    "design": {{
+        "canvasBackgroundColor": "#HEXCODE",
+        "widgetBackgroundColor": "#HEXCODE",
+        "widgetBorderColor": "#HEXCODE",
+        "fontColor": "#HEXCODE",
+        "visualizationColors": ["#HEX1", "#HEX2", "#HEX3", "#HEX4", "#HEX5", "#HEX6", "#HEX7", "#HEX8"],
+        "fontFamily": "Font Name"
+    }}
+}}
+
+CRITICAL RULES:
+1. Address the user's feedback specifically
+2. Keep what worked from the previous design
+3. Ensure visualization colors are distinguishable
+4. NEVER use white/very light colors for visualizations if background is white
+5. Maintain high contrast for readability
+
+IMPORTANT: Return ONLY valid JSON without markdown formatting."""
+
+        # Call LLM
+        response = llm_client.chat.completions.create(
+            model="databricks-gpt-5",
+            messages=[
+                {
+                    "role": "user",
+                    "content": refinement_prompt
+                }
+            ],
+            max_tokens=1000
+        )
+        
+        # Parse response
+        llm_response = response.choices[0].message.content.strip()
+        
+        if llm_response.startswith('```'):
+            lines = llm_response.split('\n')
+            llm_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else llm_response
+        
+        response_data = json.loads(llm_response)
+        reasoning_text = response_data.get('reasoning', 'No reasoning provided')
+        design_data = response_data.get('design', {})
+        
+        # Build UI settings
+        ui_settings = {
+            "uiSettings": {
+                "theme": {
+                    "canvasBackgroundColor": {
+                        "light": design_data.get('canvasBackgroundColor', '#FAFAFB'),
+                        "dark": "#1F272D"
+                    },
+                    "widgetBackgroundColor": {
+                        "light": design_data.get('widgetBackgroundColor', '#FFFFFF'),
+                        "dark": "#11171C"
+                    },
+                    "widgetBorderColor": {
+                        "light": design_data.get('widgetBorderColor', '#E0E0E0')
+                    },
+                    "fontColor": {
+                        "light": design_data.get('fontColor', '#11171C'),
+                        "dark": "#E8ECF0"
+                    },
+                    "selectionColor": {
+                        "light": "#2272B4",
+                        "dark": "#8ACAFF"
+                    },
+                    "visualizationColors": design_data.get('visualizationColors', [
+                        "#077A9D", "#FFAB00", "#00A972", "#FF3621", "#8BCAE7"
+                    ]),
+                    "widgetHeaderAlignment": "LEFT",
+                    "fontFamily": design_data.get('fontFamily', 'Arial')
+                },
+                "genieSpace": {
+                    "isEnabled": False,
+                    "enablementMode": "DISABLED"
+                },
+                "applyModeEnabled": False
+            }
+        }
+        
+        # Create refined reasoning display
+        reasoning_display = html.Div([
+            html.H6("💡 Refined Design Reasoning", className="mb-3"),
+            dbc.Alert([
+                html.Strong("📝 Your Feedback: "),
+                html.Span(f'"{feedback_prompt}"')
+            ], color="warning", className="mb-2"),
+            dbc.Card([
+                dbc.CardBody([
+                    html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
+                    html.Hr(),
+                    html.H6("🎨 Refined Design Colors:", className="mb-2"),
+                    html.P([
+                        html.Strong("Canvas: "),
+                        html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 
+                                 style={'backgroundColor': design_data.get('canvasBackgroundColor', '#FFF'), 
+                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px'})
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Widgets: "),
+                        html.Span(design_data.get('widgetBackgroundColor', 'N/A'),
+                                 style={'backgroundColor': design_data.get('widgetBackgroundColor', '#FFF'), 
+                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px', 'border': '1px solid #ddd'})
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Font: "),
+                        html.Span(f"{design_data.get('fontColor', 'N/A')} ({design_data.get('fontFamily', 'N/A')})")
+                    ], className="mb-2"),
+                    html.P([
+                        html.Strong("Visualization Colors: "),
+                        html.Div([
+                            html.Span(
+                                color,
+                                style={
+                                    'backgroundColor': color,
+                                    'padding': '5px 15px',
+                                    'margin': '2px',
+                                    'borderRadius': '3px',
+                                    'display': 'inline-block',
+                                    'color': '#FFF',
+                                    'fontSize': '11px',
+                                    'border': '1px solid #ddd'
+                                }
+                            ) for color in design_data.get('visualizationColors', [])
+                        ])
+                    ], className="mb-2")
+                ])
+            ], color="success", outline=True)
+        ])
+        
+        print("✅ Design refined based on feedback")
+        return reasoning_display, ui_settings, reasoning_text
+        
+    except json.JSONDecodeError as e:
+        error_msg = dbc.Alert([
+            html.Strong("❌ Failed to parse AI response"),
+            html.Br(),
+            html.Small(f"Error: {str(e)}")
+        ], color="danger")
+        return error_msg, None, None
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        error_msg = dbc.Alert([
+            html.Strong("❌ Error during design refinement"),
+            html.Br(),
+            html.Small(f"Error: {str(e)}")
+        ], color="danger")
+        return error_msg, None, None
 

@@ -28,7 +28,7 @@ try:
         create_filter_widget, create_bar_chart_widget,
         create_line_chart_widget, create_pivot_widget
     )
-    from datasets import DATASETS as datasets
+    from example_datasets.datasets import DATASETS as datasets
     from dataset_filter import apply_simple_filter_to_dataset, get_dataset_filters_summary
     print("✅ Dashboard modules imported")
     
@@ -37,7 +37,13 @@ try:
     print("✅ AI dashboard generator imported successfully")
     
     print("📦 Importing design infusion module...")
-    from dashboard_management_functions import extract_design_from_image, generate_design_from_prompt
+    from dashboard_management_functions import (
+        extract_design_from_image, 
+        generate_design_from_prompt,
+        analyze_dashboard_layout,
+        generate_design_with_analysis,
+        refine_design_from_feedback
+    )
     print("✅ Design infusion module imported successfully")
     
     print("📦 Importing page layouts...")
@@ -159,6 +165,13 @@ app.layout = dbc.Container([
     dcc.Store(id='existing-dashboard-config', data=None),  # Store for existing dashboard config
     dcc.Store(id='existing-dashboard-name', data=None),  # Store for existing dashboard name
     
+    # Stores for INTELLIGENT DESIGN INFUSION workflow
+    dcc.Store(id='design-analysis-text', data=None),  # Store dashboard analysis text
+    dcc.Store(id='design-reasoning-text', data=None),  # Store AI reasoning text
+    dcc.Store(id='design-generated-ui-settings', data=None),  # Store generated design (not yet applied)
+    dcc.Store(id='original-design-prompt', data=None),  # Store original prompt for refinement
+    dcc.Store(id='previous-design-data', data=None),  # Store previous design for refinement
+    
     dcc.Interval(id='ai-progress-interval', interval=500, disabled=True, n_intervals=0, max_intervals=300),  # Poll every 500ms, max 2.5 mins
     
     dbc.Row([
@@ -245,9 +258,9 @@ app.layout = dbc.Container([
         ])
     ], id="infusion-modal", size="lg", is_open=False),
     
-    # Separate Modal for Existing Dashboard Page
+    # Separate Modal for Existing Dashboard Page (Enhanced with Intelligent Workflow)
     dbc.Modal([
-        dbc.ModalHeader(dbc.ModalTitle("🎨 Apply Design Infusion")),
+        dbc.ModalHeader(dbc.ModalTitle("🎨 Intelligent Design Infusion")),
         dbc.ModalBody([
             html.P("Choose how you want to generate your design:", className="mb-3"),
             
@@ -278,21 +291,67 @@ app.layout = dbc.Container([
                 ])
             ], className="mb-3"),
             
-            # Option 2: Text Prompt
+            # Option 2: Text Prompt (with Intelligent Analysis)
             dbc.Card([
                 dbc.CardBody([
-                    html.H6("✍️ Option 2: Describe Your Design", className="mb-3"),
-                    html.P("Describe the style you want (e.g., 'Van Gogh painting style', 'Modern minimalist').", className="text-muted small mb-3"),
+                    html.H6("✍️ Option 2: Describe Your Design (AI-Assisted)", className="mb-3"),
+                    html.P("Describe the style you want. AI will analyze your dashboard and explain design choices before applying.", className="text-muted small mb-3"),
                     dbc.Textarea(
                         id='existing-dashboard-infusion-prompt',
-                        placeholder="Example: I would like the dashboard to have the same style as Van Gogh's paintings...",
+                        placeholder="Example: Modern professional theme with blue accents, Corporate style, Dark elegant theme...",
                         style={'width': '100%', 'minHeight': '100px'},
                         className="mb-2"
                     ),
-                    dbc.Button("✨ Generate Design", id="existing-generate-design-from-prompt-btn", color="primary", size="sm")
+                    dbc.Button("🔍 Analyze & Generate Design", id="existing-generate-design-from-prompt-btn", color="primary", size="sm")
                 ])
             ], className="mb-3"),
             
+            # Analysis & Reasoning Display Section (NEW)
+            dcc.Loading(
+                id="existing-design-analysis-loading",
+                type="default",
+                children=html.Div(id='existing-design-analysis-display', className="mt-3")
+            ),
+            
+            dcc.Loading(
+                id="existing-design-reasoning-loading",
+                type="default",
+                children=html.Div(id='existing-design-reasoning-display', className="mt-3")
+            ),
+            
+            # Validation Section (NEW - shown after design generation)
+            html.Div(
+                id='existing-design-validation-section',
+                children=[
+                    html.Hr(className="my-3"),
+                    dbc.ButtonGroup([
+                        dbc.Button("✅ Validate & Apply Design", id="existing-validate-design-btn", color="success", size="sm"),
+                        dbc.Button("✏️ Refine Design", id="existing-refine-design-btn", color="warning", size="sm")
+                    ], className="mb-3 w-100"),
+                    
+                    # Refinement Input (hidden by default)
+                    dbc.Collapse(
+                        dbc.Card([
+                            dbc.CardBody([
+                                html.H6("💬 Provide Refinement Feedback:", className="mb-2"),
+                                html.P("Tell the AI what to improve (e.g., 'Make colors darker', 'Use more blue', 'Increase contrast')", 
+                                       className="text-muted small mb-2"),
+                                dbc.Textarea(
+                                    id='existing-design-refinement-prompt',
+                                    placeholder="Example: Make the blue darker and add more contrast between widgets...",
+                                    style={'minHeight': '80px'}
+                                ),
+                                dbc.Button("🔄 Apply Refinement", id="existing-apply-refinement-btn", color="primary", size="sm", className="mt-2")
+                            ])
+                        ]),
+                        id="existing-refinement-collapse",
+                        is_open=False
+                    )
+                ],
+                style={'display': 'none'}  # Hidden until reasoning is generated
+            ),
+            
+            # Loading/Status for image-based infusion (legacy support)
             dcc.Loading(
                 id="existing-dashboard-infusion-loading",
                 type="default",
@@ -302,7 +361,7 @@ app.layout = dbc.Container([
         dbc.ModalFooter([
             dbc.Button("Close", id="close-existing-infusion-modal", color="secondary", size="sm")
         ])
-    ], id="existing-infusion-modal", size="lg", is_open=False)
+    ], id="existing-infusion-modal", size="xl", is_open=False)
     
 ], fluid=True, className="p-4")
 
@@ -617,14 +676,15 @@ def apply_infusion_to_new_dashboard(contents, prompt_btn_clicks, filename, promp
 
 
 @callback(
-    [Output('existing-dashboard-infusion-status', 'children'),
-     Output('existing-dashboard-preview', 'children', allow_duplicate=True),
-     Output('existing-dashboard-id', 'data', allow_duplicate=True),
-     Output('existing-dashboard-config', 'data', allow_duplicate=True),
-     Output('existing-dashboard-name', 'data', allow_duplicate=True),
-     Output('existing-infusion-modal', 'is_open'),
-     Output('existing-dashboard-infusion-upload', 'contents'),
-     Output('existing-dashboard-infusion-prompt', 'value')],
+    [Output('existing-design-analysis-display', 'children'),
+     Output('existing-design-reasoning-display', 'children'),
+     Output('existing-design-validation-section', 'style'),
+     Output('design-analysis-text', 'data'),
+     Output('design-reasoning-text', 'data'),
+     Output('design-generated-ui-settings', 'data'),
+     Output('original-design-prompt', 'data'),
+     Output('previous-design-data', 'data'),
+     Output('existing-dashboard-infusion-status', 'children')],
     [Input('existing-dashboard-infusion-upload', 'contents'),
      Input('existing-generate-design-from-prompt-btn', 'n_clicks')],
     [State('existing-dashboard-infusion-upload', 'filename'),
@@ -634,97 +694,164 @@ def apply_infusion_to_new_dashboard(contents, prompt_btn_clicks, filename, promp
      State('existing-dashboard-name', 'data')],
     prevent_initial_call=True
 )
-def apply_infusion_to_existing_dashboard(contents, prompt_btn_clicks, filename, prompt_text, dashboard_id, dashboard_config, dashboard_name):
-    """Process uploaded image OR text prompt and apply design infusion to EXISTING dashboard (from Existing Dashboard page)"""
+def generate_design_for_existing_dashboard(contents, prompt_btn_clicks, filename, prompt_text, dashboard_id, dashboard_config, dashboard_name):
+    """Generate design with analysis and reasoning (NEW INTELLIGENT WORKFLOW - doesn't apply immediately)"""
     from dash import callback_context
     
     # Check what triggered the callback
     if not callback_context.triggered:
-        return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+        return "", "", {'display': 'none'}, None, None, None, None, None, ""
     
     trigger_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     
     # Validate that we have dashboard data
     if not dashboard_id or not dashboard_config:
         error_msg = dbc.Alert("⚠️ Missing dashboard data", color="warning")
-        return error_msg, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+        return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
     
     # Validate that we have either image or prompt
     if trigger_id == 'existing-dashboard-infusion-upload' and not contents:
-        return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+        # Image upload path - use legacy direct application
+        if not contents:
+            return "", "", {'display': 'none'}, None, None, None, None, None, ""
+        
+        try:
+            print(f"📷 [LEGACY] Processing image upload for immediate application")
+            _, design_data = extract_design_from_image(contents, filename, llm_client)
+            
+            # For image uploads, show the result but don't use the intelligent workflow
+            status_msg = dbc.Alert([
+                html.Strong("✅ Design extracted from image!"),
+                html.Br(),
+                html.Small("Image-based design will be applied when you validate.")
+            ], color="info")
+            
+            return "", "", {'display': 'none'}, None, None, design_data, None, None, status_msg
+            
+        except Exception as e:
+            error_msg = dbc.Alert(f"❌ Error: {str(e)}", color="danger")
+            return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
     
     if trigger_id == 'existing-generate-design-from-prompt-btn' and (not prompt_text or not prompt_text.strip()):
         error_msg = dbc.Alert("⚠️ Please enter a design description", color="warning")
-        return error_msg, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+        return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
     
     try:
-        # Extract/Generate design based on input type
-        # design_infusion functions already imported from dashboard at module level
+        # INTELLIGENT WORKFLOW for text prompts
+        print(f"🎨 [INTELLIGENT] Analyzing dashboard and generating design with reasoning")
+        print(f"   Dashboard: {dashboard_id}")
+        print(f"   Prompt: {prompt_text[:50]}...")
+        
+        # Call the new intelligent function
+        analysis_display, reasoning_display, ui_settings, analysis_txt, reasoning_txt = generate_design_with_analysis(
+            prompt_text,
+            dashboard_config,
+            llm_client
+        )
+        
+        if not ui_settings or 'uiSettings' not in ui_settings:
+            error_msg = dbc.Alert("⚠️ Failed to generate design", color="warning")
+            return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
+        
+        print(f"✅ Design generated with analysis and reasoning")
+        
+        # Extract previous design for refinement
+        serialized = dashboard_config.get('serialized_dashboard', {})
+        if isinstance(serialized, str):
+            serialized = json.loads(serialized)
+        
+        previous_theme = serialized.get('uiSettings', {}).get('theme', {})
+        previous_design = {
+            'canvasBackgroundColor': previous_theme.get('canvasBackgroundColor', {}).get('light', '#FAFAFB'),
+            'widgetBackgroundColor': previous_theme.get('widgetBackgroundColor', {}).get('light', '#FFFFFF'),
+            'widgetBorderColor': previous_theme.get('widgetBorderColor', {}).get('light', '#E0E0E0'),
+            'fontColor': previous_theme.get('fontColor', {}).get('light', '#11171C'),
+            'visualizationColors': previous_theme.get('visualizationColors', []),
+            'fontFamily': previous_theme.get('fontFamily', 'Arial')
+        }
+        
+        # Show validation section
+        validation_style = {'display': 'block'}
+        
+        return (
+            "",  # Don't show analysis display (user doesn't need to see it)
+            reasoning_display,
+            validation_style,
+            analysis_txt,
+            reasoning_txt,
+            ui_settings,
+            prompt_text,  # Store original prompt for refinement
+            previous_design,  # Store previous design
+            ""  # Clear status
+        )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        error_msg = dbc.Alert([
+            html.Strong("❌ Error during design generation"),
+            html.Br(),
+            html.Small(f"Error: {str(e)}")
+        ], color="danger")
+        return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
+
+
+# NEW CALLBACKS FOR INTELLIGENT DESIGN INFUSION WORKFLOW
+
+@callback(
+    [Output('existing-dashboard-preview', 'children', allow_duplicate=True),
+     Output('existing-dashboard-id', 'data', allow_duplicate=True),
+     Output('existing-dashboard-config', 'data', allow_duplicate=True),
+     Output('existing-infusion-modal', 'is_open', allow_duplicate=True),
+     Output('existing-dashboard-infusion-prompt', 'value', allow_duplicate=True),
+     Output('existing-design-validation-section', 'style', allow_duplicate=True),
+     Output('existing-dashboard-infusion-status', 'children', allow_duplicate=True)],
+    Input('existing-validate-design-btn', 'n_clicks'),
+    [State('design-generated-ui-settings', 'data'),
+     State('existing-dashboard-id', 'data'),
+     State('existing-dashboard-config', 'data'),
+     State('existing-dashboard-name', 'data')],
+    prevent_initial_call=True
+)
+def apply_validated_design_to_existing(n_clicks, ui_settings, dashboard_id, dashboard_config, dashboard_name):
+    """Apply the validated design to the existing dashboard"""
+    if not n_clicks or not ui_settings or not dashboard_id:
+        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
+    
+    try:
         import copy
         
-        print(f"🎨 [EXISTING PAGE] Processing design infusion for dashboard {dashboard_id}")
+        print(f"✅ [VALIDATION] Applying validated design to dashboard {dashboard_id}")
         
-        # Handle different input types
-        if trigger_id == 'existing-dashboard-infusion-upload':
-            print(f"📷 Processing image upload")
-            _, design_data = extract_design_from_image(contents, filename, llm_client)
-        else:  # existing-generate-design-from-prompt-btn
-            print(f"✍️ Generating design from prompt: {prompt_text[:50]}...")
-            _, design_data = generate_design_from_prompt(prompt_text, llm_client)
-        
-        if not design_data or 'uiSettings' not in design_data:
-            error_msg = dbc.Alert("⚠️ Failed to extract/generate design elements", color="warning")
-            return error_msg, no_update, no_update, no_update, no_update, no_update, no_update, no_update
-        
-        print(f"✅ New design extracted/generated successfully")
-        
-        # Extract the serialized_dashboard from the config (for retrieved dashboards)
-        print(f"📋 Extracting serialized_dashboard from retrieved config")
+        # Extract serialized_dashboard
         serialized = dashboard_config.get('serialized_dashboard', {})
-        
-        # Parse if it's a JSON string
         if isinstance(serialized, str):
-            try:
-                serialized = json.loads(serialized)
-            except json.JSONDecodeError as e:
-                print(f"Error parsing serialized_dashboard: {e}")
-                error_msg = dbc.Alert(f"⚠️ Error parsing dashboard configuration: {str(e)}", color="danger")
-                return error_msg, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            serialized = json.loads(serialized)
         
-        # Use the serialized dashboard as the config
         updated_config = copy.deepcopy(serialized)
         
-        # Remove old uiSettings if exists, then add new one
+        # Remove old uiSettings and apply new one
         if 'uiSettings' in updated_config:
-            print(f"🔄 Replacing existing design with new infused design")
             del updated_config['uiSettings']
         
-        updated_config['uiSettings'] = design_data['uiSettings']
-        print(f"✅ New uiSettings applied to config")
+        updated_config['uiSettings'] = ui_settings['uiSettings']
+        print(f"✅ uiSettings applied to config")
         
-        # Update dashboard in place using Lakeview API (instead of delete+recreate)
-        # # Delete the old dashboard
-        # print(f"🗑️ Deleting old dashboard {dashboard_id}")
-        # dashboard_manager.delete_dashboard(dashboard_id)
-        # 
-        # # Create new dashboard with updated config
-        # print(f"🚀 Creating new dashboard with infused design")
-        # new_dashboard_id_created = dashboard_manager.create_dashboard(updated_config, dashboard_name)
-        
-        print(f"🔄 Updating dashboard {dashboard_id} with infused design")
+        # Update dashboard
+        print(f"🔄 Updating dashboard...")
         updated_dashboard_id = dashboard_manager.update_dashboard(dashboard_id, updated_config)
         new_embed_url = dashboard_manager.get_embed_url(updated_dashboard_id)
         
-        # Add cache-busting parameter to force iframe refresh
+        # Add cache-busting
         cache_buster = f"?_refresh={int(time.time() * 1000)}"
         new_embed_url_with_refresh = new_embed_url + cache_buster
         
-        # Create new preview
+        # Create preview
         preview_card = dbc.Card([
             dbc.CardHeader([
                 dbc.Row([
                     dbc.Col([
-                        html.H4(f"✅ Dashboard Updated with Design Infusion: {dashboard_name}"),
+                        html.H4(f"✅ Dashboard Updated: {dashboard_name}"),
                         html.Small(f"Dashboard ID: {updated_dashboard_id}", className="text-muted")
                     ], width=7),
                     dbc.Col([
@@ -746,29 +873,84 @@ def apply_infusion_to_existing_dashboard(contents, prompt_btn_clicks, filename, 
             ])
         ])
         
-        success_msg = dbc.Alert([
-            html.Strong("✅ Design infusion applied successfully!"),
-            html.Br(),
-            html.Small("Dashboard has been updated with new theme.")
-        ], color="success")
-        
-        # Store the updated config with serialized_dashboard wrapper for future infusions
+        # Store updated config
         full_updated_config = {
             'serialized_dashboard': updated_config
         }
         
-        # Close modal and clear both upload and prompt after success
-        return success_msg, preview_card, updated_dashboard_id, full_updated_config, dashboard_name, False, None, ""
-    
+        success_msg = dbc.Alert("✅ Design applied successfully!", color="success")
+        
+        # Close modal, clear prompt, hide validation section
+        return preview_card, updated_dashboard_id, full_updated_config, False, "", {'display': 'none'}, success_msg
+        
     except Exception as e:
         import traceback
         traceback.print_exc()
-        error_msg = dbc.Alert([
-            html.Strong("❌ Error applying infusion"),
-            html.Br(),
-            html.Small(f"Error: {str(e)}")
-        ], color="danger")
-        return error_msg, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+        error_msg = dbc.Alert(f"❌ Error applying design: {str(e)}", color="danger")
+        return no_update, no_update, no_update, no_update, no_update, no_update, error_msg
+
+
+@callback(
+    Output('existing-refinement-collapse', 'is_open'),
+    Input('existing-refine-design-btn', 'n_clicks'),
+    State('existing-refinement-collapse', 'is_open'),
+    prevent_initial_call=True
+)
+def toggle_existing_refinement(n_clicks, is_open):
+    """Toggle the refinement input section"""
+    if n_clicks:
+        return not is_open
+    return is_open
+
+
+@callback(
+    [Output('existing-design-reasoning-display', 'children', allow_duplicate=True),
+     Output('design-reasoning-text', 'data', allow_duplicate=True),
+     Output('design-generated-ui-settings', 'data', allow_duplicate=True),
+     Output('existing-refinement-collapse', 'is_open', allow_duplicate=True),
+     Output('existing-dashboard-infusion-status', 'children', allow_duplicate=True)],
+    Input('existing-apply-refinement-btn', 'n_clicks'),
+    [State('existing-design-refinement-prompt', 'value'),
+     State('original-design-prompt', 'data'),
+     State('design-reasoning-text', 'data'),
+     State('previous-design-data', 'data'),
+     State('existing-dashboard-config', 'data')],
+    prevent_initial_call=True
+)
+def apply_design_refinement_to_existing(n_clicks, feedback, original_prompt, previous_reasoning, previous_design, dashboard_config):
+    """Refine design based on user feedback"""
+    if not n_clicks or not feedback or not feedback.strip():
+        return no_update, no_update, no_update, no_update, no_update
+    
+    try:
+        print(f"🔄 [REFINEMENT] Applying feedback: {feedback[:50]}...")
+        
+        # Call refinement function
+        refined_reasoning, refined_ui_settings, refined_txt = refine_design_from_feedback(
+            original_prompt,
+            feedback,
+            previous_reasoning,
+            previous_design,
+            dashboard_config,
+            llm_client
+        )
+        
+        if not refined_ui_settings or 'uiSettings' not in refined_ui_settings:
+            error_msg = dbc.Alert("⚠️ Failed to refine design", color="warning")
+            return error_msg, no_update, no_update, no_update, ""
+        
+        print(f"✅ Design refined successfully")
+        
+        success_msg = dbc.Alert("✅ Design refined! Review and validate or refine again.", color="info")
+        
+        # Update reasoning display, close refinement section
+        return refined_reasoning, refined_txt, refined_ui_settings, False, success_msg
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        error_msg = dbc.Alert(f"❌ Refinement error: {str(e)}", color="danger")
+        return error_msg, no_update, no_update, no_update, ""
 
 
 # ============================================================================

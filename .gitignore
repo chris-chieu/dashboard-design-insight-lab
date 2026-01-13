@@ -93,7 +93,19 @@ temp/
 *.backup
 *~
 
+# Project-specific backup files
+ai_dashboard_generator_backup.py
+*_backup.py
+copy_app.py
+app_backup.py
+app.py.backup
+app.py.bak
 
-.databricks
+# Development/implementation documentation (keep local, not in repo)
+INTEGRATION_COMPLETE.md
+INTELLIGENT_DESIGN_INFUSION_GUIDE.md
+LAYOUT_GUIDE.md
+SPACER_WIDGET_GUIDE.md
+SPACING_GUIDE.md
 
 .databricks
