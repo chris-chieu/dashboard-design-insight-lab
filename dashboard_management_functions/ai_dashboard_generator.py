@@ -710,7 +710,6 @@ EXAMPLES:
         
         # Check if at least one widget was created
         if not layout:
-            ai_progress_store[session_id]['status'] = 'error'
             ai_progress_store[session_id]['steps'].append('❌ No widgets were suggested by AI')
             ai_results_store[session_id] = {
                 'status': dbc.Alert("⚠️ AI did not suggest any widgets for this request. Please try rephrasing your prompt.", color="warning"),
@@ -718,6 +717,7 @@ EXAMPLES:
                 'preview': "",
                 'dashboard_id': None
             }
+            ai_progress_store[session_id]['status'] = 'error'
             return {
                 "status": "no_widgets_suggested",
                 "error": "AI did not suggest any widgets"
@@ -805,8 +805,7 @@ EXAMPLES:
         
         success_alert = dbc.Alert(status_items, color="success", dismissable=True)
         
-        # Mark as complete and store results
-        ai_progress_store[session_id]['status'] = 'completed'
+        # Store results FIRST (before marking as complete to avoid race condition)
         ai_results_store[session_id] = {
             'status': success_alert,
             'progress': "",
@@ -815,6 +814,9 @@ EXAMPLES:
             'dashboard_config': dashboard_config,
             'dashboard_name': dashboard_name
         }
+        
+        # THEN mark as complete (polling callback will now find all data ready)
+        ai_progress_store[session_id]['status'] = 'completed'
         
         # Log final results to MLflow trace
         mlflow.set_tags({
@@ -836,7 +838,6 @@ EXAMPLES:
         }
         
     except json.JSONDecodeError as e:
-        ai_progress_store[session_id]['status'] = 'error'
         ai_progress_store[session_id]['steps'].append(f'❌ Failed to parse AI response: {str(e)}')
         error_msg = dbc.Alert([
             html.Strong("❌ Failed to parse AI response"),
@@ -849,6 +850,7 @@ EXAMPLES:
             'preview': "",
             'dashboard_id': None
         }
+        ai_progress_store[session_id]['status'] = 'error'
         # Log error to MLflow trace
         mlflow.set_tags({
             "status": "failed_json_parse",
@@ -863,7 +865,6 @@ EXAMPLES:
         }
         
     except Exception as e:
-        ai_progress_store[session_id]['status'] = 'error'
         ai_progress_store[session_id]['steps'].append(f'❌ Error: {str(e)}')
         error_msg = dbc.Alert([
             html.Strong("❌ Failed to generate dashboard"),
@@ -876,6 +877,7 @@ EXAMPLES:
             'preview': "",
             'dashboard_id': None
         }
+        ai_progress_store[session_id]['status'] = 'error'
         # Log error to MLflow trace
         mlflow.set_tags({
             "status": "failed",

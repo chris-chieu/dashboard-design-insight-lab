@@ -579,20 +579,44 @@ Your task is to:
 Please provide your response in THREE parts:
 
 PART 1 - CURRENT STYLE FEEDBACK:
-Evaluate the current dashboard design:
-- What works well in the current design? (colors, contrast, readability)
-- What could be improved? (specific issues with current colors, font, etc.)
-- How does the current design impact the dashboard's usability?
-- Overall impression of the current style (professional, casual, cluttered, clean, etc.)
+Evaluate the current dashboard design in a structured format:
+
+✅ What works well:
+[Describe what's good about current colors, contrast, readability]
+
+⚠️ What could be improved:
+[Specific issues with current colors, font, etc.]
+
+📊 Impact on usability:
+[How the current design affects dashboard usability]
+
+💡 Overall impression:
+[Professional, casual, cluttered, clean, etc. and why]
+
+IMPORTANT: Use line breaks between each section for readability.
 
 PART 2 - NEW DESIGN REASONING:
-Explain your new design choices:
-- How does the user's request translate to visual design?
-- What specific changes address the issues you identified?
-- What color palette best represents this style?
-- How will these colors enhance readability for the {analysis['total_widgets']} widgets present?
-- What font choice complements this aesthetic and why?
-- Any special considerations for this dashboard's layout?
+Explain your new design choices in a structured format:
+
+🎯 Design interpretation:
+[How the user's request translates to visual design]
+
+🔧 Specific changes:
+[What changes address the issues you identified]
+
+🎨 Color palette rationale:
+[What palette represents this style and why]
+
+📈 Readability enhancement:
+[How these colors enhance readability for the {analysis['total_widgets']} widgets]
+
+✍️ Font choice:
+[What font complements this aesthetic and why]
+
+🔍 Special considerations:
+[Any layout-specific considerations]
+
+IMPORTANT: Use line breaks between each section for readability.
 
 PART 3 - DESIGN SPECIFICATION (JSON):
 Return the complete response as JSON in this EXACT format:
@@ -605,18 +629,20 @@ Return the complete response as JSON in this EXACT format:
         "widgetBackgroundColor": "#HEXCODE",
         "widgetBorderColor": "#HEXCODE",
         "fontColor": "#HEXCODE",
-        "visualizationColors": ["#HEX1", "#HEX2", "#HEX3", "#HEX4", "#HEX5", "#HEX6", "#HEX7", "#HEX8"],
+        "visualizationColors": ["#HEX1", "#HEX2", "#HEX3", ... 30 colors total],
         "fontFamily": "Font Name"
     }}
 }}
 
 CRITICAL RULES:
-1. Visualization colors MUST be clearly distinguishable (different hues, not just shades)
-2. NEVER use white or very light colors (lightness > 90%) for visualizations if background is white
-3. Ensure high contrast between text and background for readability
-4. Font family MUST be one of: Arial, Brush Script MT, Courier New, Georgia, Impact, Tahoma, Times New Roman, Trebuchet MS, Verdana
-5. Consider the dashboard has {analysis['total_widgets']} widgets - colors should work at scale
-6. Be specific and constructive in your current design feedback
+1. visualizationColors MUST contain EXACTLY 30 colors to cover all edge cases
+2. Visualization colors MUST be clearly distinguishable (different hues, not just shades)
+3. NEVER use white or very light colors (lightness > 90%) for visualizations if background is white
+4. Ensure high contrast between text and background for readability
+5. Font family MUST be one of: Arial, Brush Script MT, Courier New, Georgia, Impact, Tahoma, Times New Roman, Trebuchet MS, Verdana
+6. Consider the dashboard has {analysis['total_widgets']} widgets - colors should work at scale
+7. Be specific and constructive in your current design feedback
+8. Create a diverse palette with distinct hues (reds, blues, greens, yellows, purples, oranges, teals, pinks, etc.)
 
 IMPORTANT: Return ONLY valid JSON without markdown formatting."""
 
@@ -669,7 +695,12 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
                         "dark": "#8ACAFF"
                     },
                     "visualizationColors": design_data.get('visualizationColors', [
-                        "#077A9D", "#FFAB00", "#00A972", "#FF3621", "#8BCAE7"
+                        "#077A9D", "#FFAB00", "#00A972", "#FF3621", "#8BCAE7", 
+                        "#9B59B6", "#E74C3C", "#3498DB", "#2ECC71", "#F39C12",
+                        "#1ABC9C", "#E67E22", "#95A5A6", "#34495E", "#C0392B",
+                        "#16A085", "#27AE60", "#2980B9", "#8E44AD", "#F1C40F",
+                        "#D35400", "#C0392B", "#BDC3C7", "#7F8C8D", "#2C3E50",
+                        "#E91E63", "#9C27B0", "#673AB7", "#3F51B5", "#2196F3"
                     ]),
                     "widgetHeaderAlignment": "LEFT",
                     "fontFamily": design_data.get('fontFamily', 'Arial')
@@ -807,23 +838,26 @@ Based on the user's feedback, refine your design. Explain what you're changing a
 Return your response in this EXACT JSON format:
 
 {{
-    "reasoning": "Explain what feedback you received, what you're changing, and why this refinement improves the design",
+    "current_style_feedback": "Brief evaluation of your previous design and how the user's feedback addresses it (use line breaks for structure)",
+    "reasoning": "Explain what feedback you received, what you're changing, and why this refinement improves the design (use line breaks for structure)",
     "design": {{
         "canvasBackgroundColor": "#HEXCODE",
         "widgetBackgroundColor": "#HEXCODE",
         "widgetBorderColor": "#HEXCODE",
         "fontColor": "#HEXCODE",
-        "visualizationColors": ["#HEX1", "#HEX2", "#HEX3", "#HEX4", "#HEX5", "#HEX6", "#HEX7", "#HEX8"],
+        "visualizationColors": ["#HEX1", "#HEX2", "#HEX3", ... 30 colors total],
         "fontFamily": "Font Name"
     }}
 }}
 
 CRITICAL RULES:
-1. Address the user's feedback specifically
-2. Keep what worked from the previous design
-3. Ensure visualization colors are distinguishable
-4. NEVER use white/very light colors for visualizations if background is white
-5. Maintain high contrast for readability
+1. visualizationColors MUST contain EXACTLY 30 colors to cover all edge cases
+2. Address the user's feedback specifically
+3. Keep what worked from the previous design
+4. Ensure visualization colors are distinguishable (different hues, not just shades)
+5. NEVER use white/very light colors for visualizations if background is white
+6. Maintain high contrast for readability
+7. Create a diverse palette with distinct hues
 
 IMPORTANT: Return ONLY valid JSON without markdown formatting."""
 
@@ -847,6 +881,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
             llm_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else llm_response
         
         response_data = json.loads(llm_response)
+        current_style_feedback = response_data.get('current_style_feedback', 'No feedback provided')
         reasoning_text = response_data.get('reasoning', 'No reasoning provided')
         design_data = response_data.get('design', {})
         
@@ -874,7 +909,12 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
                         "dark": "#8ACAFF"
                     },
                     "visualizationColors": design_data.get('visualizationColors', [
-                        "#077A9D", "#FFAB00", "#00A972", "#FF3621", "#8BCAE7"
+                        "#077A9D", "#FFAB00", "#00A972", "#FF3621", "#8BCAE7", 
+                        "#9B59B6", "#E74C3C", "#3498DB", "#2ECC71", "#F39C12",
+                        "#1ABC9C", "#E67E22", "#95A5A6", "#34495E", "#C0392B",
+                        "#16A085", "#27AE60", "#2980B9", "#8E44AD", "#F1C40F",
+                        "#D35400", "#C0392B", "#BDC3C7", "#7F8C8D", "#2C3E50",
+                        "#E91E63", "#9C27B0", "#673AB7", "#3F51B5", "#2196F3"
                     ]),
                     "widgetHeaderAlignment": "LEFT",
                     "fontFamily": design_data.get('fontFamily', 'Arial')
