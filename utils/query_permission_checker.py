@@ -20,20 +20,25 @@ def extract_table_names(sql_query):
         sql_query: SQL query string
     
     Returns:
-        Set[str]: Set of fully qualified table names
+        Set[str]: Set of fully qualified table names (without backticks)
     """
     # Remove comments
     sql_query = re.sub(r'--.*$', '', sql_query, flags=re.MULTILINE)
     sql_query = re.sub(r'/\*.*?\*/', '', sql_query, flags=re.DOTALL)
     
     # Pattern to match table names in FROM and JOIN clauses
-    # Matches: catalog.schema.table or schema.table or table
-    # Handles optional AS alias
-    pattern = r'\b(?:FROM|JOIN)\s+([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+){0,2})(?:\s+(?:AS\s+)?[a-zA-Z0-9_]+)?'
+    # Handles:
+    # - With backticks: `catalog`.`schema`.`table`
+    # - Without backticks: catalog.schema.table
+    # - Mixed: catalog.`schema`.table
+    # - Optional AS alias
+    pattern = r'\b(?:FROM|JOIN)\s+(`?[a-zA-Z0-9_]+`?(?:\.`?[a-zA-Z0-9_]+`?){0,2})(?:\s+(?:AS\s+)?[a-zA-Z0-9_]+)?'
     
     tables = set()
     for match in re.finditer(pattern, sql_query, re.IGNORECASE):
         table_name = match.group(1)
+        # Remove backticks from the table name
+        table_name = table_name.replace('`', '')
         # Skip if it looks like a CTE or subquery alias (usually single word without dots)
         # But keep it if it has a dot (catalog.schema.table or schema.table)
         if '.' in table_name or table_name.upper() not in ['VALUES', 'LATERAL', 'UNNEST']:
@@ -76,8 +81,27 @@ def test_dashboard_queries_for_permissions(dashboard_queries, workspace_client, 
     tables_to_test = [t for t in all_tables if '.' in t and not t.upper().startswith('IDENTIFIER')]
     
     if not tables_to_test:
-        print("⚠️ No tables detected for permission testing - skipping")
-        return True, None
+        print("⚠️ No tables detected for permission testing - this should not happen normally")
+        print(f"   Queries processed: {len(dashboard_queries)}")
+        # Fail-safe: If we can't detect tables, we should be cautious and block the dashboard
+        # rather than allowing potential permission violations
+        error_alert = dbc.Alert([
+            html.H5("⚠️ Unable to Verify Permissions", className="alert-heading"),
+            html.P([
+                "Could not extract table names from dashboard queries for permission verification.",
+                html.Br(),
+                html.Br(),
+                "This may indicate:",
+                html.Ul([
+                    html.Li("Complex query patterns that require special handling"),
+                    html.Li("Dynamic table references (IDENTIFIER, variables)"),
+                    html.Li("Queries that need to be verified manually")
+                ])
+            ]),
+            html.Hr(),
+            html.P("Please contact your administrator to verify you have appropriate permissions for this dashboard.", className="mb-0 small")
+        ], color="warning")
+        return False, error_alert
     
     print(f"🔒 Found {len(tables_to_test)} unique tables to test: {', '.join(sorted(tables_to_test))}")
     

@@ -74,6 +74,7 @@ CRITICAL RULES FOR VISUALIZATION COLORS:
 IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks."""
 
         # Call Vision LLM
+        print("🔍 Calling vision LLM for image analysis...")
         response = llm_client.chat.completions.create(
             model="databricks-gpt-5",
             messages=[
@@ -91,8 +92,16 @@ IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks
             max_tokens=500
         )
         
+        # Validate response
+        if not response or not hasattr(response, 'choices') or not response.choices:
+            raise ValueError("Empty or invalid response from LLM API. The model may not support vision/image inputs.")
+        
+        if not response.choices[0].message or not response.choices[0].message.content:
+            raise ValueError("LLM response has no content. The model may have failed to process the image.")
+        
         # Parse the LLM response
         llm_response = response.choices[0].message.content
+        print(f"✅ Received response from vision LLM ({len(llm_response)} characters)")
         
         # Clean up response (remove markdown code blocks if present)
         llm_response = llm_response.strip()
@@ -187,18 +196,47 @@ IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks
         return result_text, ui_settings
         
     except json.JSONDecodeError as e:
+        import traceback
+        traceback.print_exc()
+        print(f"❌ JSON Decode Error in image analysis: {str(e)}")
+        print(f"   Raw LLM response: {llm_response if 'llm_response' in locals() else 'Not available'}")
         error_msg = dbc.Alert([
             html.Strong("❌ Failed to parse LLM response"),
             html.Br(),
-            html.Small(f"The AI response was not in valid JSON format. Error: {str(e)}")
+            html.P("The AI response was not in valid JSON format.", className="mb-2"),
+            html.Small(f"Error: {str(e)}", className="mb-2"),
+            html.Hr(),
+            html.Small("Check the console for the raw response.", className="text-muted")
         ], color="danger")
         return error_msg, None
         
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ Error analyzing image: {str(e)}")
+        print(f"   Full traceback:\n{error_trace}")
+        
+        # Provide specific error messages
+        error_details = str(e)
+        if 'subscript' in error_details.lower() or 'NoneType' in error_details:
+            specific_msg = "The vision model (databricks-gpt-5) may not support image analysis or returned an empty response. Consider using a vision-capable model like databricks-gpt-4o or databricks-claude-sonnet."
+        elif 'API' in error_details or 'authentication' in error_details.lower():
+            specific_msg = "API authentication or connection error."
+        elif 'model' in error_details.lower():
+            specific_msg = "Model error. The specified model may not support vision/image inputs."
+        else:
+            specific_msg = "An unexpected error occurred during image analysis."
+        
         error_msg = dbc.Alert([
             html.Strong("❌ Error analyzing image"),
             html.Br(),
-            html.Small(f"Error: {str(e)}")
+            html.P(specific_msg, className="mb-2"),
+            html.Small([
+                html.Strong("Error: "),
+                str(e)
+            ], className="mb-2"),
+            html.Hr(),
+            html.Small("Tip: Ensure you're using a vision-capable model and that the image is a valid format (PNG, JPG, etc.).", className="text-muted")
         ], color="danger")
         return error_msg, None
 
@@ -585,15 +623,16 @@ Evaluate the current dashboard design in a structured format:
 [Describe what's good about current colors, contrast, readability]
 
 ⚠️ What could be improved:
-[Specific issues with current colors, font, etc.]
+[Specific issues with current colors, font, etc. If the design is already excellent, state "The current design is already well-executed with good color choices, contrast, and readability. No major improvements needed from a design quality perspective."]
 
 📊 Impact on usability:
-[How the current design affects dashboard usability]
+[How the current design affects dashboard usability - be honest if it's already good]
 
 💡 Overall impression:
-[Professional, casual, cluttered, clean, etc. and why]
+[Professional, casual, cluttered, clean, etc. and why - acknowledge if the design is already strong]
 
 IMPORTANT: Use line breaks between each section for readability.
+NOTE: Be honest - if the current design is already visually appealing and follows best practices, acknowledge that!
 
 PART 2 - NEW DESIGN REASONING:
 Explain your new design choices in a structured format:
@@ -602,21 +641,22 @@ Explain your new design choices in a structured format:
 [How the user's request translates to visual design]
 
 🔧 Specific changes:
-[What changes address the issues you identified]
+[What changes you're making to achieve the user's requested style. If the current design is already good, frame this as "style transformation" rather than "fixes" - e.g., "While the current design is solid, we're transforming it to match the user's requested [style] aesthetic by..."]
 
 🎨 Color palette rationale:
 [What palette represents this style and why]
 
 📈 Readability enhancement:
-[How these colors enhance readability for the {analysis['total_widgets']} widgets]
+[How these colors will maintain or enhance readability for the {analysis['total_widgets']} widgets. If current design is already readable, emphasize "maintaining excellent readability while..."]
 
 ✍️ Font choice:
-[What font complements this aesthetic and why]
+[What font complements this aesthetic and why. If keeping same font because it works well, explain why it remains a good choice.]
 
 🔍 Special considerations:
 [Any layout-specific considerations]
 
 IMPORTANT: Use line breaks between each section for readability.
+NOTE: Remember - design changes can be about style preference, not just fixing problems. A well-designed dashboard can still be transformed to match a different aesthetic!
 
 PART 3 - DESIGN SPECIFICATION (JSON):
 Return the complete response as JSON in this EXACT format:

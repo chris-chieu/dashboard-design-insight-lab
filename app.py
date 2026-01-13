@@ -569,10 +569,18 @@ def apply_infusion_to_new_dashboard(contents, prompt_btn_clicks, filename, promp
         # Handle different input types
         if trigger_id == 'dashboard-infusion-upload':
             print(f"📷 Processing image upload")
-            _, design_data = extract_design_from_image(contents, filename, llm_client)
+            result_display, design_data = extract_design_from_image(contents, filename, llm_client)
+            # Check if result_display is an error (design_data will be None)
+            if design_data is None:
+                print(f"❌ Image extraction failed - returning error display")
+                return result_display, no_update, no_update, no_update, no_update, no_update, no_update, no_update
         else:  # generate-design-from-prompt-btn
             print(f"✍️ Generating design from prompt: {prompt_text[:50]}...")
-            _, design_data = generate_design_from_prompt(prompt_text, llm_client)
+            result_display, design_data = generate_design_from_prompt(prompt_text, llm_client)
+            # Check if result_display is an error (design_data will be None)
+            if design_data is None:
+                print(f"❌ Design generation from prompt failed - returning error display")
+                return result_display, no_update, no_update, no_update, no_update, no_update, no_update, no_update
         
         if not design_data or 'uiSettings' not in design_data:
             error_msg = dbc.Alert("⚠️ Failed to extract/generate design elements", color="warning")
@@ -684,7 +692,10 @@ def apply_infusion_to_new_dashboard(contents, prompt_btn_clicks, filename, promp
      Output('design-generated-ui-settings', 'data'),
      Output('original-design-prompt', 'data'),
      Output('previous-design-data', 'data'),
-     Output('existing-dashboard-infusion-status', 'children')],
+     Output('existing-dashboard-infusion-status', 'children'),
+     Output('existing-dashboard-preview', 'children', allow_duplicate=True),
+     Output('existing-infusion-modal', 'is_open', allow_duplicate=True),
+     Output('existing-dashboard-config', 'data', allow_duplicate=True)],
     [Input('existing-dashboard-infusion-upload', 'contents'),
      Input('existing-generate-design-from-prompt-btn', 'n_clicks')],
     [State('existing-dashboard-infusion-upload', 'filename'),
@@ -700,100 +711,193 @@ def generate_design_for_existing_dashboard(contents, prompt_btn_clicks, filename
     
     # Check what triggered the callback
     if not callback_context.triggered:
-        return "", "", {'display': 'none'}, None, None, None, None, None, ""
+        return "", "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
     
     trigger_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     
     # Validate that we have dashboard data
     if not dashboard_id or not dashboard_config:
         error_msg = dbc.Alert("⚠️ Missing dashboard data", color="warning")
-        return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
+        return error_msg, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
     
-    # Validate that we have either image or prompt
-    if trigger_id == 'existing-dashboard-infusion-upload' and not contents:
-        # Image upload path - use legacy direct application
+    # Handle image upload path separately (legacy direct application)
+    if trigger_id == 'existing-dashboard-infusion-upload':
+        # Image upload path
         if not contents:
-            return "", "", {'display': 'none'}, None, None, None, None, None, ""
+            # No image provided
+            return "", "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
         
         try:
-            print(f"📷 [LEGACY] Processing image upload for immediate application")
-            _, design_data = extract_design_from_image(contents, filename, llm_client)
+            print(f"📷 Processing image upload for immediate application")
+            result_display, design_data = extract_design_from_image(contents, filename, llm_client)
             
-            # For image uploads, show the result but don't use the intelligent workflow
-            status_msg = dbc.Alert([
-                html.Strong("✅ Design extracted from image!"),
-                html.Br(),
-                html.Small("Image-based design will be applied when you validate.")
-            ], color="info")
+            # Check if result_display is an error (Alert component)
+            if design_data is None:
+                # extract_design_from_image returned an error in result_display
+                print(f"❌ Image extraction failed - returning error display")
+                return result_display, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
             
-            return "", "", {'display': 'none'}, None, None, design_data, None, None, status_msg
+            if not design_data or 'uiSettings' not in design_data:
+                error_msg = dbc.Alert("⚠️ Failed to extract design elements from image", color="warning")
+                return error_msg, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
+            
+            print(f"✅ Design extracted from image successfully")
+            
+            # Apply the design immediately (same as new dashboard)
+            serialized = dashboard_config.get('serialized_dashboard', {})
+            if isinstance(serialized, str):
+                serialized = json.loads(serialized)
+            
+            # Update config with new design
+            import copy
+            updated_config = copy.deepcopy(serialized)
+            if 'uiSettings' in updated_config:
+                print(f"🔄 Replacing existing design with image-extracted design")
+                del updated_config['uiSettings']
+            
+            updated_config['uiSettings'] = design_data['uiSettings']
+            print(f"✅ New uiSettings applied to config")
+            
+            # Update dashboard and get new embed URL
+            print(f"🔄 Updating dashboard {dashboard_id} with image-extracted design")
+            dashboard_manager.update_dashboard(dashboard_id, updated_config)
+            new_embed_url = dashboard_manager.get_embed_url(dashboard_id)
+            
+            # Add cache-busting parameter
+            import time
+            cache_buster = f"?_refresh={int(time.time() * 1000)}"
+            new_embed_url_with_refresh = new_embed_url + cache_buster
+            
+            # Create updated preview card (same as validation callback)
+            dashboard_name = dashboard_config.get('display_name', f'Dashboard {dashboard_id[:8]}')
+            preview_card = dbc.Card([
+                dbc.CardHeader([
+                    dbc.Row([
+                        dbc.Col([
+                            html.H4(f"✅ Dashboard Updated: {dashboard_name}"),
+                            html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
+                        ], width=7),
+                        dbc.Col([
+                            dbc.Button("🎨 Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
+                            dbc.Button("🗑️ Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
+                        ], width=5, className="text-end")
+                    ], align="center")
+                ]),
+                dbc.CardBody([
+                    html.Iframe(
+                        src=new_embed_url_with_refresh,
+                        style={
+                            'width': '100%',
+                            'height': '800px',
+                            'border': '1px solid #ddd',
+                            'borderRadius': '5px'
+                        }
+                    )
+                ])
+            ])
+            
+            # Update the stored config
+            full_updated_config = {
+                'serialized_dashboard': updated_config,
+                'display_name': dashboard_name
+            }
+            
+            print(f"✅ Image-based design applied successfully! Closing modal and refreshing preview.")
+            
+            # Return: empty analysis/reasoning displays, hide validation section, 
+            # update preview, close modal (False), update config
+            return "", "", {'display': 'none'}, None, None, None, None, None, "", preview_card, False, full_updated_config
             
         except Exception as e:
-            error_msg = dbc.Alert(f"❌ Error: {str(e)}", color="danger")
-            return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
+            import traceback
+            traceback.print_exc()
+            print(f"❌ Unexpected exception in existing dashboard image upload: {str(e)}")
+            error_msg = dbc.Alert([
+                html.Strong("❌ Error processing image upload"),
+                html.Br(),
+                html.Small(f"Error: {str(e)}")
+            ], color="danger")
+            return error_msg, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
     
-    if trigger_id == 'existing-generate-design-from-prompt-btn' and (not prompt_text or not prompt_text.strip()):
-        error_msg = dbc.Alert("⚠️ Please enter a design description", color="warning")
-        return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
+    # Handle text prompt path (intelligent workflow)
+    if trigger_id == 'existing-generate-design-from-prompt-btn':
+        if not prompt_text or not prompt_text.strip():
+            error_msg = dbc.Alert("⚠️ Please enter a design description", color="warning")
+            return error_msg, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
+        
+        try:
+            # INTELLIGENT WORKFLOW for text prompts
+            print(f"🎨 [INTELLIGENT] Analyzing dashboard and generating design with reasoning")
+            print(f"   Dashboard: {dashboard_id}")
+            print(f"   Prompt: {prompt_text[:50]}...")
+            
+            # Call the new intelligent function
+            analysis_display, reasoning_display, ui_settings, analysis_txt, reasoning_txt = generate_design_with_analysis(
+                prompt_text,
+                dashboard_config,
+                llm_client
+            )
+            
+            if not ui_settings or 'uiSettings' not in ui_settings:
+                # Check if analysis_display contains error details
+                if analysis_display and hasattr(analysis_display, 'children'):
+                    # Return the actual error from the design_infusion function
+                    return analysis_display, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
+                else:
+                    error_msg = dbc.Alert([
+                        html.Strong("⚠️ Failed to generate design"),
+                        html.Br(),
+                        html.Small("Check the console/terminal for detailed error information.")
+                    ], color="warning")
+                    return error_msg, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
+            
+            print(f"✅ Design generated with analysis and reasoning")
+            
+            # Extract previous design for refinement
+            serialized = dashboard_config.get('serialized_dashboard', {})
+            if isinstance(serialized, str):
+                serialized = json.loads(serialized)
+            
+            previous_theme = serialized.get('uiSettings', {}).get('theme', {})
+            previous_design = {
+                'canvasBackgroundColor': previous_theme.get('canvasBackgroundColor', {}).get('light', '#FAFAFB'),
+                'widgetBackgroundColor': previous_theme.get('widgetBackgroundColor', {}).get('light', '#FFFFFF'),
+                'widgetBorderColor': previous_theme.get('widgetBorderColor', {}).get('light', '#E0E0E0'),
+                'fontColor': previous_theme.get('fontColor', {}).get('light', '#11171C'),
+                'visualizationColors': previous_theme.get('visualizationColors', []),
+                'fontFamily': previous_theme.get('fontFamily', 'Arial')
+            }
+            
+            # Show validation section
+            validation_style = {'display': 'block'}
+            
+            return (
+                "",  # Don't show analysis display (user doesn't need to see it)
+                reasoning_display,
+                validation_style,
+                analysis_txt,
+                reasoning_txt,
+                ui_settings,
+                prompt_text,  # Store original prompt for refinement
+                previous_design,  # Store previous design
+                "",  # Clear status
+                no_update,  # Don't update preview yet (wait for validation)
+                no_update,  # Don't close modal yet (wait for validation)
+                no_update  # Don't update config yet (wait for validation)
+            )
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            error_msg = dbc.Alert([
+                html.Strong("❌ Error during design generation"),
+                html.Br(),
+                html.Small(f"Error: {str(e)}")
+            ], color="danger")
+            return error_msg, "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
     
-    try:
-        # INTELLIGENT WORKFLOW for text prompts
-        print(f"🎨 [INTELLIGENT] Analyzing dashboard and generating design with reasoning")
-        print(f"   Dashboard: {dashboard_id}")
-        print(f"   Prompt: {prompt_text[:50]}...")
-        
-        # Call the new intelligent function
-        analysis_display, reasoning_display, ui_settings, analysis_txt, reasoning_txt = generate_design_with_analysis(
-            prompt_text,
-            dashboard_config,
-            llm_client
-        )
-        
-        if not ui_settings or 'uiSettings' not in ui_settings:
-            error_msg = dbc.Alert("⚠️ Failed to generate design", color="warning")
-            return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
-        
-        print(f"✅ Design generated with analysis and reasoning")
-        
-        # Extract previous design for refinement
-        serialized = dashboard_config.get('serialized_dashboard', {})
-        if isinstance(serialized, str):
-            serialized = json.loads(serialized)
-        
-        previous_theme = serialized.get('uiSettings', {}).get('theme', {})
-        previous_design = {
-            'canvasBackgroundColor': previous_theme.get('canvasBackgroundColor', {}).get('light', '#FAFAFB'),
-            'widgetBackgroundColor': previous_theme.get('widgetBackgroundColor', {}).get('light', '#FFFFFF'),
-            'widgetBorderColor': previous_theme.get('widgetBorderColor', {}).get('light', '#E0E0E0'),
-            'fontColor': previous_theme.get('fontColor', {}).get('light', '#11171C'),
-            'visualizationColors': previous_theme.get('visualizationColors', []),
-            'fontFamily': previous_theme.get('fontFamily', 'Arial')
-        }
-        
-        # Show validation section
-        validation_style = {'display': 'block'}
-        
-        return (
-            "",  # Don't show analysis display (user doesn't need to see it)
-            reasoning_display,
-            validation_style,
-            analysis_txt,
-            reasoning_txt,
-            ui_settings,
-            prompt_text,  # Store original prompt for refinement
-            previous_design,  # Store previous design
-            ""  # Clear status
-        )
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        error_msg = dbc.Alert([
-            html.Strong("❌ Error during design generation"),
-            html.Br(),
-            html.Small(f"Error: {str(e)}")
-        ], color="danger")
-        return error_msg, "", {'display': 'none'}, None, None, None, None, None, ""
+    # If we reach here, neither condition was met (shouldn't happen)
+    return "", "", {'display': 'none'}, None, None, None, None, None, "", no_update, no_update, no_update
 
 
 # NEW CALLBACKS FOR INTELLIGENT DESIGN INFUSION WORKFLOW
