@@ -614,9 +614,25 @@ Your task is to:
 1. First, provide feedback on the CURRENT dashboard design
 2. Then, create a new design that fulfills the user's request
 
-Please provide your response in THREE parts:
+Please provide your response in FOUR parts:
 
-PART 1 - CURRENT STYLE FEEDBACK:
+PART 1 - QUICK SUMMARY (Before → After comparison):
+Provide a concise before/after comparison in this EXACT format:
+
+🎨 Canvas Background: [old color] → [new color] ([brief 3-5 word reason])
+📦 Widget Background: [old color] → [new color] ([brief 3-5 word reason])
+✍️ Font: [old font] → [new font] ([brief 3-5 word reason])
+🎯 Font Color: [old color] → [new color] ([brief 3-5 word reason])
+📊 Visualization Palette: [brief description of old] → [brief description of new] ([brief 3-5 word reason])
+
+Example:
+🎨 Canvas Background: #FAFAFB → #1A1A2E (darker, more focused aesthetic)
+📦 Widget Background: #FFFFFF → #16213E (improved contrast and depth)
+✍️ Font: Arial → Georgia (more elegant, professional look)
+🎯 Font Color: #11171C → #EAEAEA (better readability on dark)
+📊 Visualization Palette: Standard blues/greens → Vibrant neon palette (modern, high-energy aesthetic)
+
+PART 2 - CURRENT STYLE FEEDBACK:
 Evaluate the current dashboard design in a structured format:
 
 ✅ What works well:
@@ -634,7 +650,7 @@ Evaluate the current dashboard design in a structured format:
 IMPORTANT: Use line breaks between each section for readability.
 NOTE: Be honest - if the current design is already visually appealing and follows best practices, acknowledge that!
 
-PART 2 - NEW DESIGN REASONING:
+PART 3 - NEW DESIGN REASONING:
 Explain your new design choices in a structured format:
 
 🎯 Design interpretation:
@@ -658,12 +674,13 @@ Explain your new design choices in a structured format:
 IMPORTANT: Use line breaks between each section for readability.
 NOTE: Remember - design changes can be about style preference, not just fixing problems. A well-designed dashboard can still be transformed to match a different aesthetic!
 
-PART 3 - DESIGN SPECIFICATION (JSON):
+PART 4 - DESIGN SPECIFICATION (JSON):
 Return the complete response as JSON in this EXACT format:
 
 {{
-    "current_style_feedback": "Your evaluation of the current design from Part 1",
-    "reasoning": "Your new design reasoning from Part 2",
+    "summary": "Your 2-3 sentence summary from Part 1",
+    "current_style_feedback": "Your evaluation of the current design from Part 2",
+    "reasoning": "Your new design reasoning from Part 3",
     "design": {{
         "canvasBackgroundColor": "#HEXCODE",
         "widgetBackgroundColor": "#HEXCODE",
@@ -707,6 +724,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
             llm_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else llm_response
         
         response_data = json.loads(llm_response)
+        summary_text = response_data.get('summary', 'No summary provided')
         current_style_feedback = response_data.get('current_style_feedback', 'No feedback provided')
         reasoning_text = response_data.get('reasoning', 'No reasoning provided')
         design_data = response_data.get('design', {})
@@ -753,61 +771,83 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
             }
         }
         
-        # Create reasoning display
+        # Create reasoning display with summary and collapsible details
         reasoning_display = html.Div([
-            html.H6("💡 AI Design Analysis & Reasoning", className="mb-3"),
+            html.H6("💡 Design Changes Summary", className="mb-3"),
             
-            # Current Style Feedback Section
+            # Summary Card - Prominent at top
             dbc.Card([
-                dbc.CardHeader(html.H6("🔍 Current Dashboard Style Feedback", className="mb-0")),
                 dbc.CardBody([
-                    html.P(current_style_feedback, className="mb-0", style={'whiteSpace': 'pre-wrap'})
+                    html.P(summary_text, className="mb-0", style={'whiteSpace': 'pre-wrap', 'fontSize': '14px', 'lineHeight': '1.8'})
                 ])
-            ], color="light", className="mb-3"),
+            ], color="success", outline=True, className="mb-3"),
             
-            # New Design Reasoning Section
-            dbc.Card([
-                dbc.CardHeader(html.H6("✨ New Design Reasoning", className="mb-0")),
-                dbc.CardBody([
-                    html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
-                    html.Hr(),
-                    html.H6("🎨 Generated Design Colors:", className="mb-2"),
-                    html.P([
-                        html.Strong("Canvas: "),
-                        html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 
-                                 style={'backgroundColor': design_data.get('canvasBackgroundColor', '#FFF'), 
-                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px'})
-                    ], className="mb-2"),
-                    html.P([
-                        html.Strong("Widgets: "),
-                        html.Span(design_data.get('widgetBackgroundColor', 'N/A'),
-                                 style={'backgroundColor': design_data.get('widgetBackgroundColor', '#FFF'), 
-                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px', 'border': '1px solid #ddd'})
-                    ], className="mb-2"),
-                    html.P([
-                        html.Strong("Font: "),
-                        html.Span(f"{design_data.get('fontColor', 'N/A')} ({design_data.get('fontFamily', 'N/A')})")
-                    ], className="mb-2"),
-                    html.P([
-                        html.Strong("Visualization Colors: "),
-                        html.Div([
-                            html.Span(
-                                color,
-                                style={
-                                    'backgroundColor': color,
-                                    'padding': '5px 15px',
-                                    'margin': '2px',
-                                    'borderRadius': '3px',
-                                    'display': 'inline-block',
-                                    'color': '#FFF',
-                                    'fontSize': '11px',
-                                    'border': '1px solid #ddd'
-                                }
-                            ) for color in design_data.get('visualizationColors', [])
+            # Collapsible detailed analysis section using HTML details/summary
+            html.Details([
+                html.Summary(
+                    "📖 View Detailed Analysis & Reasoning",
+                    style={
+                        'cursor': 'pointer',
+                        'color': '#007bff',
+                        'fontSize': '14px',
+                        'marginBottom': '10px',
+                        'fontWeight': '500'
+                    }
+                ),
+                html.Div([
+                    # Current Style Feedback Section
+                    dbc.Card([
+                        dbc.CardHeader(html.H6("🔍 Current Dashboard Style Feedback", className="mb-0")),
+                        dbc.CardBody([
+                            html.P(current_style_feedback, className="mb-0", style={'whiteSpace': 'pre-wrap'})
                         ])
-                    ], className="mb-2")
-                ])
-            ], color="success", outline=True)
+                    ], color="light", className="mb-3 mt-2"),
+                    
+                    # New Design Reasoning Section
+                    dbc.Card([
+                        dbc.CardHeader(html.H6("✨ New Design Reasoning", className="mb-0")),
+                        dbc.CardBody([
+                            html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
+                            html.Hr(),
+                            html.H6("🎨 Generated Design Colors:", className="mb-2"),
+                            html.P([
+                                html.Strong("Canvas: "),
+                                html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 
+                                         style={'backgroundColor': design_data.get('canvasBackgroundColor', '#FFF'), 
+                                               'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px'})
+                            ], className="mb-2"),
+                            html.P([
+                                html.Strong("Widgets: "),
+                                html.Span(design_data.get('widgetBackgroundColor', 'N/A'),
+                                         style={'backgroundColor': design_data.get('widgetBackgroundColor', '#FFF'), 
+                                               'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px', 'border': '1px solid #ddd'})
+                            ], className="mb-2"),
+                            html.P([
+                                html.Strong("Font: "),
+                                html.Span(f"{design_data.get('fontColor', 'N/A')} ({design_data.get('fontFamily', 'N/A')})")
+                            ], className="mb-2"),
+                            html.P([
+                                html.Strong("Visualization Colors: "),
+                                html.Div([
+                                    html.Span(
+                                        color,
+                                        style={
+                                            'backgroundColor': color,
+                                            'padding': '5px 15px',
+                                            'margin': '2px',
+                                            'borderRadius': '3px',
+                                            'display': 'inline-block',
+                                            'color': '#FFF',
+                                            'fontSize': '11px',
+                                            'border': '1px solid #ddd'
+                                        }
+                                    ) for color in design_data.get('visualizationColors', [])[:10]  # Show first 10
+                                ])
+                            ], className="mb-2")
+                        ])
+                    ], color="info", outline=True, className="mb-3")
+                ], style={'marginTop': '10px'})
+            ], style={'marginBottom': '15px'})
         ])
         
         print("✅ Design generated with reasoning")
@@ -878,6 +918,7 @@ Based on the user's feedback, refine your design. Explain what you're changing a
 Return your response in this EXACT JSON format:
 
 {{
+    "summary": "Brief before → after comparison showing what changed based on feedback (same format as initial generation)",
     "current_style_feedback": "Brief evaluation of your previous design and how the user's feedback addresses it (use line breaks for structure)",
     "reasoning": "Explain what feedback you received, what you're changing, and why this refinement improves the design (use line breaks for structure)",
     "design": {{
@@ -921,6 +962,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
             llm_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else llm_response
         
         response_data = json.loads(llm_response)
+        summary_text = response_data.get('summary', 'No summary provided')
         current_style_feedback = response_data.get('current_style_feedback', 'No feedback provided')
         reasoning_text = response_data.get('reasoning', 'No reasoning provided')
         design_data = response_data.get('design', {})
@@ -967,54 +1009,89 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
             }
         }
         
-        # Create refined reasoning display
+        # Create refined reasoning display with summary and collapsible details
         reasoning_display = html.Div([
-            html.H6("💡 Refined Design Reasoning", className="mb-3"),
+            html.H6("💡 Refined Design Summary", className="mb-3"),
+            
+            # Show user's feedback
             dbc.Alert([
                 html.Strong("📝 Your Feedback: "),
                 html.Span(f'"{feedback_prompt}"')
             ], color="warning", className="mb-2"),
+            
+            # Summary Card - Prominent at top
             dbc.Card([
                 dbc.CardBody([
-                    html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
-                    html.Hr(),
-                    html.H6("🎨 Refined Design Colors:", className="mb-2"),
-                    html.P([
-                        html.Strong("Canvas: "),
-                        html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 
-                                 style={'backgroundColor': design_data.get('canvasBackgroundColor', '#FFF'), 
-                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px'})
-                    ], className="mb-2"),
-                    html.P([
-                        html.Strong("Widgets: "),
-                        html.Span(design_data.get('widgetBackgroundColor', 'N/A'),
-                                 style={'backgroundColor': design_data.get('widgetBackgroundColor', '#FFF'), 
-                                       'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px', 'border': '1px solid #ddd'})
-                    ], className="mb-2"),
-                    html.P([
-                        html.Strong("Font: "),
-                        html.Span(f"{design_data.get('fontColor', 'N/A')} ({design_data.get('fontFamily', 'N/A')})")
-                    ], className="mb-2"),
-                    html.P([
-                        html.Strong("Visualization Colors: "),
-                        html.Div([
-                            html.Span(
-                                color,
-                                style={
-                                    'backgroundColor': color,
-                                    'padding': '5px 15px',
-                                    'margin': '2px',
-                                    'borderRadius': '3px',
-                                    'display': 'inline-block',
-                                    'color': '#FFF',
-                                    'fontSize': '11px',
-                                    'border': '1px solid #ddd'
-                                }
-                            ) for color in design_data.get('visualizationColors', [])
-                        ])
-                    ], className="mb-2")
+                    html.P(summary_text, className="mb-0", style={'whiteSpace': 'pre-wrap', 'fontSize': '14px', 'lineHeight': '1.8'})
                 ])
-            ], color="success", outline=True)
+            ], color="success", outline=True, className="mb-3"),
+            
+            # Collapsible detailed analysis section using HTML details/summary
+            html.Details([
+                html.Summary(
+                    "📖 View Detailed Analysis & Reasoning",
+                    style={
+                        'cursor': 'pointer',
+                        'color': '#007bff',
+                        'fontSize': '14px',
+                        'marginBottom': '10px',
+                        'fontWeight': '500'
+                    }
+                ),
+                html.Div([
+                    # Current Style Feedback Section
+                    dbc.Card([
+                        dbc.CardHeader(html.H6("🔍 Previous Design Evaluation", className="mb-0")),
+                        dbc.CardBody([
+                            html.P(current_style_feedback, className="mb-0", style={'whiteSpace': 'pre-wrap'})
+                        ])
+                    ], color="light", className="mb-3 mt-2"),
+                    
+                    # Refinement Reasoning Section
+                    dbc.Card([
+                        dbc.CardHeader(html.H6("✨ Refinement Reasoning", className="mb-0")),
+                        dbc.CardBody([
+                            html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
+                            html.Hr(),
+                            html.H6("🎨 Refined Design Colors:", className="mb-2"),
+                            html.P([
+                                html.Strong("Canvas: "),
+                                html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 
+                                         style={'backgroundColor': design_data.get('canvasBackgroundColor', '#FFF'), 
+                                               'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px'})
+                            ], className="mb-2"),
+                            html.P([
+                                html.Strong("Widgets: "),
+                                html.Span(design_data.get('widgetBackgroundColor', 'N/A'),
+                                         style={'backgroundColor': design_data.get('widgetBackgroundColor', '#FFF'), 
+                                               'padding': '2px 8px', 'borderRadius': '3px', 'marginLeft': '5px', 'border': '1px solid #ddd'})
+                            ], className="mb-2"),
+                            html.P([
+                                html.Strong("Font: "),
+                                html.Span(f"{design_data.get('fontColor', 'N/A')} ({design_data.get('fontFamily', 'N/A')})")
+                            ], className="mb-2"),
+                            html.P([
+                                html.Strong("Visualization Colors: "),
+                                html.Div([
+                                    html.Span(
+                                        color,
+                                        style={
+                                            'backgroundColor': color,
+                                            'padding': '5px 15px',
+                                            'margin': '2px',
+                                            'borderRadius': '3px',
+                                            'display': 'inline-block',
+                                            'color': '#FFF',
+                                            'fontSize': '11px',
+                                            'border': '1px solid #ddd'
+                                        }
+                                    ) for color in design_data.get('visualizationColors', [])[:10]  # Show first 10
+                                ])
+                            ], className="mb-2")
+                        ])
+                    ], color="info", outline=True, className="mb-3")
+                ], style={'marginTop': '10px'})
+            ], style={'marginBottom': '15px'})
         ])
         
         print("✅ Design refined based on feedback")
