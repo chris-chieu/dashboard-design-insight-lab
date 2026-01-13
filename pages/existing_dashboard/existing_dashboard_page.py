@@ -26,16 +26,20 @@ def get_existing_dashboard_layout():
                 dbc.Card([
                     dbc.CardHeader(html.H4("🔍 Retrieve Dashboard by ID")),
                     dbc.CardBody([
-                        html.Label("Enter Dashboard ID:", className="fw-bold mb-2"),
-                        html.P("You can find the dashboard ID in the URL or from the deployment confirmation.", className="text-muted small mb-3"),
-                        dbc.Input(
-                            id='existing-dashboard-id-input',
-                            placeholder="e.g., 01ef5f2a-e7cf-1c1f-9fc3-e06afd4e73f3",
-                            type="text",
-                            className="mb-3"
-                        ),
-                        dbc.Button("🔍 Retrieve Dashboard", id="retrieve-dashboard-btn", color="primary", className="mb-2"),
-                        html.Div(id='retrieve-dashboard-status', className="mt-3")
+                        dbc.Row([
+                            dbc.Col([
+                                html.Label("Enter Dashboard ID:", className="fw-bold mb-2"),
+                                html.P("You can find the dashboard ID in the URL or from the deployment confirmation.", className="text-muted small mb-3"),
+                                dbc.Input(
+                                    id='existing-dashboard-id-input',
+                                    placeholder="e.g., 01ef5f2a-e7cf-1c1f-9fc3-e06afd4e73f3",
+                                    type="text",
+                                    className="mb-3"
+                                ),
+                                dbc.Button("🔍 Retrieve Dashboard", id="retrieve-dashboard-btn", color="primary", className="mb-2"),
+                                html.Div(id='retrieve-dashboard-status', className="mt-3")
+                            ], width=6)
+                        ])
                     ])
                 ], className="mb-4")
             ], width=12)
@@ -123,7 +127,12 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
     def retrieve_existing_dashboard(n_clicks, dashboard_id):
         """Retrieve and display an existing dashboard by ID"""
         if not n_clicks or not dashboard_id or not dashboard_id.strip():
-            return dbc.Alert("⚠️ Please enter a valid dashboard ID", color="warning"), "", None, None, None
+            warning_msg = dbc.Row([
+                dbc.Col([
+                    dbc.Alert("⚠️ Please enter a valid dashboard ID", color="warning")
+                ], width=6)
+            ])
+            return warning_msg, "", None, None, None
         
         try:
             dashboard_id = dashboard_id.strip()
@@ -251,23 +260,31 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
                 ])
             ])
             
-            success_msg = dbc.Alert([
-                html.Strong("✅ Dashboard retrieved successfully!"),
-                html.Br(),
-                html.Small(f"Viewing: {dashboard_name}")
-            ], color="success")
+            success_msg = dbc.Row([
+                dbc.Col([
+                    dbc.Alert([
+                        html.Strong("✅ Dashboard retrieved successfully!"),
+                        html.Br(),
+                        html.Small(f"Viewing: {dashboard_name}")
+                    ], color="success")
+                ], width=6)
+            ])
             
             # Store dashboard ID, config, and actual name in SEPARATE stores for existing dashboard page
             return success_msg, preview_card, dashboard_id, dashboard_config, dashboard_name
             
         except Exception as e:
-            error_msg = dbc.Alert([
-                html.Strong("❌ Error retrieving dashboard"),
-                html.Br(),
-                html.Small(f"Error: {str(e)}"),
-                html.Br(),
-                html.Small("Please verify the dashboard ID is correct and the dashboard exists.")
-            ], color="danger")
+            error_msg = dbc.Row([
+                dbc.Col([
+                    dbc.Alert([
+                        html.Strong("❌ Error retrieving dashboard"),
+                        html.Br(),
+                        html.Small(f"Error: {str(e)}"),
+                        html.Br(),
+                        html.Small("Please verify the dashboard ID is correct and the dashboard exists.")
+                    ], color="danger")
+                ], width=6)
+            ])
             return error_msg, "", None, None, None
     
     

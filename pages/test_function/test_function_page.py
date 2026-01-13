@@ -107,13 +107,14 @@ def get_test_function_layout():
                                     },
                                     className="mb-3"
                                 ),
-                                dbc.Button(
-                                    "🔍 Refine Analysis",
-                                    id="submit-refinement-btn",
-                                    color="primary",
-                                    size="lg",
-                                    className="w-100"
-                                ),
+                                html.Div([
+                                    dbc.Button(
+                                        "🔍 Refine Analysis",
+                                        id="submit-refinement-btn",
+                                        color="primary",
+                                        size="md"
+                                    )
+                                ], className="text-center"),
                                 html.Div(id='refinement-status', className="mt-3")
                             ])
                         ], className="mb-3")
@@ -373,8 +374,8 @@ Analyze the dashboard and return ONLY the JSON output.
                         html.H5("📋 Validate Results", className="mb-3"),
                         html.P("Are these results accurate? You can validate them or provide refinement instructions.", className="text-muted"),
                         dbc.ButtonGroup([
-                            dbc.Button("✅ Validate", id="validate-layout-btn", color="success", className="me-2", size="lg"),
-                            dbc.Button("🔄 Refine Analysis", id="refine-layout-btn", color="warning", size="lg")
+                            dbc.Button("✅ Validate", id="validate-layout-btn", color="success", className="me-2", size="md"),
+                            dbc.Button("🔄 Refine Analysis", id="refine-layout-btn", color="warning", size="md")
                         ])
                     ])
                 ], className="mb-3")

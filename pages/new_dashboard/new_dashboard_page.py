@@ -32,12 +32,16 @@ def get_new_dashboard_layout(unity_catalog="christophe_chieu", unity_schema="cer
                 dbc.Card([
                     dbc.CardHeader(html.H4("🔍 Inspect Unity Catalog Tables")),
                     dbc.CardBody([
-                        html.Label(f"Browse tables from {UNITY_CATALOG}.{UNITY_SCHEMA}:", className="fw-bold mb-2"),
-                        dcc.Dropdown(
-                            id='uc-table-dropdown',
-                            placeholder="Select a table to inspect...",
-                            className="mb-3"
-                        ),
+                        dbc.Row([
+                            dbc.Col([
+                                html.Label(f"Browse tables from {UNITY_CATALOG}.{UNITY_SCHEMA}:", className="fw-bold mb-2"),
+                                dcc.Dropdown(
+                                    id='uc-table-dropdown',
+                                    placeholder="Select a table to inspect...",
+                                    className="mb-3"
+                                )
+                            ], width=6)
+                        ]),
                         html.Div(id='uc-table-columns-display')
                     ])
                 ], className="mb-4")
@@ -249,31 +253,37 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                 for col in columns
             ]
             
-            return dbc.Card([
-                dbc.CardHeader(html.H6(f"📋 Columns in {selected_table.split('.')[-1]}")),
-                dbc.CardBody([
-                    html.P(f"Total columns: {len(columns)}", className="fw-bold mb-3"),
-                    html.Div([
-                        dbc.Table([
-                            html.Thead([
-                                html.Tr([
-                                    html.Th("Column Name", style={'width': '50%'}),
-                                    html.Th("Data Type", style={'width': '50%'})
-                                ])
-                            ]),
-                            html.Tbody(column_rows)
-                        ], bordered=True, hover=True, size='sm', style={'fontSize': '13px'})
-                    ], style={'maxHeight': '400px', 'overflowY': 'auto'}),
-                    html.Hr(),
-                    dbc.Button(
-                        "✅ Confirm & Proceed to AI Dashboard Generation",
-                        id="uc-table-confirm-btn",
-                        color="success",
-                        size="lg",
-                        className="w-100 mt-3"
-                    )
-                ])
-            ], className="mt-3")
+            return dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader(html.H6(f"📋 Columns in {selected_table.split('.')[-1]}")),
+                        dbc.CardBody([
+                            html.P(f"Total columns: {len(columns)}", className="fw-bold mb-3"),
+                            html.Div([
+                                dbc.Table([
+                                    html.Thead([
+                                        html.Tr([
+                                            html.Th("Column Name", style={'width': '50%'}),
+                                            html.Th("Data Type", style={'width': '50%'})
+                                        ])
+                                    ]),
+                                    html.Tbody(column_rows)
+                                ], bordered=True, hover=True, size='sm', style={'fontSize': '13px'})
+                            ], style={'maxHeight': '400px', 'overflowY': 'auto'}),
+                            html.Hr(),
+                            html.Div([
+                                dbc.Button(
+                                    "✅ Confirm & Proceed to AI Dashboard Generation",
+                                    id="uc-table-confirm-btn",
+                                    color="success",
+                                    size="md",
+                                    className="mt-3"
+                                )
+                            ], className="text-center")
+                        ])
+                    ], className="mt-3")
+                ], width=8)
+            ])
             
         except Exception as e:
             print(f"Error displaying columns: {e}")
@@ -344,92 +354,104 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             ai_section = dbc.Card([
                 dbc.CardHeader(html.H4("🤖 Step 2.5: AI-Powered Dashboard Generator")),
                 dbc.CardBody([
-                    dbc.Alert([
-                        html.Strong("✅ Unity Catalog table loaded successfully!"),
-                        html.Br(),
-                        html.Small(f"Table: {selected_table}"),
-                        html.Br(),
-                        html.Small(f"Columns detected: {len(column_names)}")
-                    ], color="success", className="mb-3"),
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Alert([
+                                html.Strong("✅ Unity Catalog table loaded successfully!"),
+                                html.Br(),
+                                html.Small(f"Table: {selected_table}"),
+                                html.Br(),
+                                html.Small(f"Columns detected: {len(column_names)}")
+                            ], color="success", className="mb-3")
+                        ], width=6)
+                    ]),
                     
                     # Design Infusion Section
-                    dbc.Card([
-                        dbc.CardBody([
-                            dbc.Row([
-                                dbc.Col([
-                                    html.H6("🎨 Design Infusion (Optional)", className="mb-0"),
-                                    html.Small("Extract colors and fonts from an image or describe your style", className="text-muted")
-                                ], width=8),
-                                dbc.Col([
-                                    dbc.Button("🎨 Design Options", id="infusion-toggle-btn", color="info", size="sm", outline=True, className="float-end")
-                                ], width=4)
-                            ]),
-                            dbc.Collapse([
-                                # Option 1: Upload Image
-                                html.Div([
-                                    html.Label("📷 Option 1: Upload an Image", className="fw-bold mb-2"),
-                                    html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-2"),
-                                    dcc.Upload(
-                                        id='infusion-image-upload',
-                                        children=html.Div([
-                                            '📷 Drag and Drop or ',
-                                            html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Card([
+                                dbc.CardBody([
+                                    dbc.Row([
+                                        dbc.Col([
+                                            html.H6("🎨 Design Infusion (Optional)", className="mb-0"),
+                                            html.Small("Extract colors and fonts from an image or describe your style", className="text-muted")
+                                        ], width=8),
+                                        dbc.Col([
+                                            dbc.Button("🎨 Design Options", id="infusion-toggle-btn", color="info", size="sm", outline=True, className="float-end")
+                                        ], width=4)
+                                    ]),
+                                    dbc.Collapse([
+                                        # Option 1: Upload Image
+                                        html.Div([
+                                            html.Label("📷 Option 1: Upload an Image", className="fw-bold mb-2"),
+                                            html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-2"),
+                                            dcc.Upload(
+                                                id='infusion-image-upload',
+                                                children=html.Div([
+                                                    '📷 Drag and Drop or ',
+                                                    html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
+                                                ]),
+                                                style={
+                                                    'width': '100%',
+                                                    'height': '80px',
+                                                    'lineHeight': '80px',
+                                                    'borderWidth': '2px',
+                                                    'borderStyle': 'dashed',
+                                                    'borderRadius': '10px',
+                                                    'textAlign': 'center',
+                                                    'cursor': 'pointer',
+                                                    'backgroundColor': '#f8f9fa'
+                                                },
+                                                multiple=False
+                                            ),
+                                            dcc.Loading(
+                                                id="infusion-loading",
+                                                type="default",
+                                                children=html.Div(id='infusion-result', className="mt-2 mb-3")
+                                            )
                                         ]),
-                                        style={
-                                            'width': '100%',
-                                            'height': '80px',
-                                            'lineHeight': '80px',
-                                            'borderWidth': '2px',
-                                            'borderStyle': 'dashed',
-                                            'borderRadius': '10px',
-                                            'textAlign': 'center',
-                                            'cursor': 'pointer',
-                                            'backgroundColor': '#f8f9fa'
-                                        },
-                                        multiple=False
-                                    ),
-                                    dcc.Loading(
-                                        id="infusion-loading",
-                                        type="default",
-                                        children=html.Div(id='infusion-result', className="mt-2 mb-3")
-                                    )
-                                ]),
-                                
-                                html.Hr(),
-                                
-                                # Option 2: Text Prompt
-                                html.Div([
-                                    html.Label("✍️ Option 2: Describe Your Style", className="fw-bold mb-2"),
-                                    html.P("Describe the style you want (e.g., 'Van Gogh painting style', 'Modern minimalist').", className="text-muted small mb-2"),
-                                    dbc.Textarea(
-                                        id='pre-generation-infusion-prompt',
-                                        placeholder="Example: I would like the dashboard to have the same style as Van Gogh's paintings...",
-                                        style={'width': '100%', 'minHeight': '100px'},
-                                        className="mb-2"
-                                    ),
-                                    dbc.Button("✨ Generate Design from Prompt", id="pre-generation-design-from-prompt-btn", color="primary", size="sm"),
-                                    dcc.Loading(
-                                        id="pre-generation-infusion-loading",
-                                        type="default",
-                                        children=html.Div(id='pre-generation-infusion-result', className="mt-2")
-                                    )
+                                        
+                                        html.Hr(),
+                                        
+                                        # Option 2: Text Prompt
+                                        html.Div([
+                                            html.Label("✍️ Option 2: Describe Your Style", className="fw-bold mb-2"),
+                                            html.P("Describe the style you want (e.g., 'Van Gogh painting style', 'Modern minimalist').", className="text-muted small mb-2"),
+                                            dbc.Textarea(
+                                                id='pre-generation-infusion-prompt',
+                                                placeholder="Example: I would like the dashboard to have the a modern and impactful style...",
+                                                style={'width': '100%', 'minHeight': '100px'},
+                                                className="mb-2"
+                                            ),
+                                            dbc.Button("✨ Generate Design from Prompt", id="pre-generation-design-from-prompt-btn", color="primary", size="sm"),
+                                            dcc.Loading(
+                                                id="pre-generation-infusion-loading",
+                                                type="default",
+                                                children=html.Div(id='pre-generation-infusion-result', className="mt-2")
+                                            )
+                                        ])
+                                    ], id="infusion-collapse", is_open=False, className="mt-3")
                                 ])
-                            ], id="infusion-collapse", is_open=False, className="mt-3")
-                        ])
-                    ], className="mb-3", style={'backgroundColor': '#f8f9fa'}),
+                            ], className="mb-3", style={'backgroundColor': '#f8f9fa'})
+                        ], width=8)
+                    ]),
                     
-                    html.Label("Describe your dashboard needs:", className="fw-bold mb-2"),
-                    html.P(
-                        "The AI will use the column names and their types to automatically create "
-                        "the most relevant dashboard for your needs.",
-                        className="text-muted small mb-3"
-                    ),
-                    dcc.Textarea(
-                        id='ai-dashboard-prompt',
-                        placeholder='Example: "Create a dashboard showing key metrics and trends for this data"',
-                        style={'width': '100%', 'height': '100px'},
-                        className="mb-3"
-                    ),
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("Describe your dashboard needs:", className="fw-bold mb-2"),
+                            html.P(
+                                "The AI will use the column names and their types to automatically create "
+                                "the most relevant dashboard for your needs.",
+                                className="text-muted small mb-3"
+                            ),
+                            dcc.Textarea(
+                                id='ai-dashboard-prompt',
+                                placeholder='Example: "Create a dashboard showing key metrics and trends for this data"',
+                                style={'width': '100%', 'height': '100px'},
+                                className="mb-3"
+                            )
+                        ], width=8)
+                    ]),
                     
                     # Display available columns with types
                     html.Details([
@@ -448,24 +470,26 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                 "🚀 Generate Dashboard with AI",
                                 id="generate-ai-dashboard-btn",
                                 color="success",
-                                size="lg",
-                                className="w-100"
+                                size="md"
                             )
-                        ], width=8),
+                        ], width=8, className="text-center"),
                         dbc.Col([
                             dbc.Button(
                                 "⚙️ Manual Configuration",
                                 id="manual-config-btn",
                                 color="secondary",
-                                size="lg",
-                                className="w-100"
+                                size="md"
                             )
-                        ], width=4)
+                        ], width=4, className="text-center")
                     ]),
-                    html.Div(id='ai-generation-status', className="mt-3"),
-                    html.Div(id='ai-generation-progress'),  # Progress steps with spinner
-                    html.Div(id='ai-generation-reasoning'),  # Separate reasoning display
-                    html.Div(id='ai-generation-widgets')  # Separate widget details display
+                    dbc.Row([
+                        dbc.Col([
+                            html.Div(id='ai-generation-status', className="mt-3"),
+                            html.Div(id='ai-generation-progress'),  # Progress steps with spinner
+                            html.Div(id='ai-generation-reasoning'),  # Separate reasoning display
+                            html.Div(id='ai-generation-widgets')  # Separate widget details display
+                        ], width=8)
+                    ])
                 ])
             ], className="mb-4")
             

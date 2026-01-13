@@ -1,0 +1,470 @@
+/* Databricks One Workspace Inspired Styling */
+
+/* Color Variables */
+:root {
+    /* Databricks brand colors */
+    --db-primary: #00A972;  /* Databricks teal */
+    --db-primary-hover: #008C5E;
+    --db-primary-dark: #006644;
+    --db-secondary: #1B3139;  /* Databricks navy */
+    --db-danger: #E8384F;
+    --db-danger-hover: #C92A3E;
+    --db-warning: #FF8C00;
+    --db-info: #0B7FC1;
+    
+    /* Neutral colors */
+    --db-bg-light: #FAFAFA;
+    --db-bg-white: #FFFFFF;
+    --db-text-primary: #1F272D;
+    --db-text-secondary: #5A6C75;
+    --db-text-muted: #8B98A3;
+    --db-border: #E0E5E8;
+    --db-border-hover: #C5CCD1;
+    
+    /* Shadows */
+    --db-shadow-sm: 0 1px 2px rgba(31, 39, 45, 0.08);
+    --db-shadow-md: 0 2px 8px rgba(31, 39, 45, 0.12);
+    --db-shadow-lg: 0 4px 16px rgba(31, 39, 45, 0.16);
+}
+
+/* Global styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--db-bg-light);
+    color: var(--db-text-primary);
+}
+
+/* Container */
+.container {
+    background-color: var(--db-bg-white);
+    border-radius: 8px;
+    box-shadow: var(--db-shadow-sm);
+    padding: 24px;
+    margin-top: 16px;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--db-text-primary);
+    font-weight: 600;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Primary Buttons - Databricks Teal */
+.btn-primary,
+button.btn-primary {
+    background-color: var(--db-primary) !important;
+    border-color: var(--db-primary) !important;
+    color: white !important;
+    border-radius: 20px !important;
+    font-weight: 500 !important;
+    padding: 8px 20px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+    border-width: 1px !important;
+}
+
+.btn-primary:hover,
+button.btn-primary:hover {
+    background-color: var(--db-primary-hover) !important;
+    border-color: var(--db-primary-hover) !important;
+    box-shadow: var(--db-shadow-sm) !important;
+    transform: translateY(-1px);
+}
+
+.btn-primary:active,
+button.btn-primary:active {
+    background-color: var(--db-primary-dark) !important;
+    border-color: var(--db-primary-dark) !important;
+    transform: translateY(0);
+}
+
+/* Secondary Buttons */
+.btn-secondary,
+button.btn-secondary {
+    background-color: var(--db-bg-white) !important;
+    border-color: var(--db-border) !important;
+    color: var(--db-text-primary) !important;
+    border-radius: 20px !important;
+    font-weight: 500 !important;
+    padding: 8px 20px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+}
+
+.btn-secondary:hover,
+button.btn-secondary:hover {
+    background-color: var(--db-bg-light) !important;
+    border-color: var(--db-border-hover) !important;
+    box-shadow: var(--db-shadow-sm) !important;
+}
+
+/* Danger Buttons */
+.btn-danger,
+button.btn-danger {
+    background-color: var(--db-danger) !important;
+    border-color: var(--db-danger) !important;
+    color: white !important;
+    border-radius: 20px !important;
+    font-weight: 500 !important;
+    padding: 8px 20px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+}
+
+.btn-danger:hover,
+button.btn-danger:hover {
+    background-color: var(--db-danger-hover) !important;
+    border-color: var(--db-danger-hover) !important;
+    box-shadow: var(--db-shadow-sm) !important;
+    transform: translateY(-1px);
+}
+
+/* Medium Buttons (standard) */
+.btn-md,
+button.btn-md {
+    padding: 8px 20px !important;
+    font-size: 14px !important;
+    border-radius: 20px !important;
+}
+
+/* Small Buttons */
+.btn-sm,
+button.btn-sm {
+    padding: 6px 16px !important;
+    font-size: 13px !important;
+    border-radius: 16px !important;
+}
+
+/* Outline Buttons */
+.btn-outline-primary {
+    background-color: transparent !important;
+    border-color: var(--db-primary) !important;
+    color: var(--db-primary) !important;
+    border-radius: 20px !important;
+    font-weight: 500 !important;
+    padding: 8px 20px !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--db-primary) !important;
+    color: white !important;
+}
+
+/* Compact buttons for specific actions */
+.btn-compact {
+    padding: 6px 16px !important;
+    font-size: 13px !important;
+}
+
+/* Cards */
+.card {
+    border-radius: 8px !important;
+    border: 1px solid var(--db-border) !important;
+    box-shadow: var(--db-shadow-sm) !important;
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--db-shadow-md) !important;
+}
+
+.card-header {
+    background-color: var(--db-bg-light) !important;
+    border-bottom: 1px solid var(--db-border) !important;
+    border-radius: 8px 8px 0 0 !important;
+    padding: 12px 16px !important;
+    font-weight: 600 !important;
+}
+
+.card-body {
+    padding: 16px !important;
+}
+
+/* Tabs */
+.nav-tabs {
+    border-bottom: 2px solid var(--db-border) !important;
+}
+
+.nav-tabs .nav-link {
+    border: none !important;
+    color: var(--db-text-secondary) !important;
+    font-weight: 500 !important;
+    padding: 12px 24px !important;
+    border-radius: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    margin-bottom: -2px !important;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--db-primary) !important;
+    background-color: transparent !important;
+    border-bottom-color: var(--db-border-hover) !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--db-primary) !important;
+    background-color: transparent !important;
+    border-bottom-color: var(--db-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 6px !important;
+    border-width: 1px !important;
+    padding: 12px 16px !important;
+    box-shadow: var(--db-shadow-sm) !important;
+}
+
+.alert-success {
+    background-color: #E8F7F2 !important;
+    border-color: var(--db-primary) !important;
+    color: #006644 !important;
+}
+
+.alert-danger {
+    background-color: #FDEEF0 !important;
+    border-color: var(--db-danger) !important;
+    color: #A01D2E !important;
+}
+
+.alert-warning {
+    background-color: #FFF4E5 !important;
+    border-color: var(--db-warning) !important;
+    color: #B35F00 !important;
+}
+
+.alert-info {
+    background-color: #E5F4FA !important;
+    border-color: var(--db-info) !important;
+    color: #085A8A !important;
+}
+
+/* Input Fields */
+.form-control,
+input.form-control,
+textarea.form-control,
+select.form-control {
+    border-radius: 4px !important;
+    border: 1px solid var(--db-border) !important;
+    padding: 8px 12px !important;
+    transition: all 0.2s ease;
+    font-size: 14px !important;
+}
+
+.form-control:focus,
+input.form-control:focus,
+textarea.form-control:focus,
+select.form-control:focus {
+    border-color: var(--db-primary) !important;
+    box-shadow: 0 0 0 3px rgba(0, 169, 114, 0.1) !important;
+    outline: none !important;
+}
+
+/* Labels */
+label {
+    font-weight: 500 !important;
+    color: var(--db-text-primary) !important;
+    margin-bottom: 6px !important;
+    font-size: 14px !important;
+}
+
+/* Modal */
+.modal-content {
+    border-radius: 8px !important;
+    border: none !important;
+    box-shadow: var(--db-shadow-lg) !important;
+}
+
+.modal-header {
+    background-color: var(--db-bg-light) !important;
+    border-bottom: 1px solid var(--db-border) !important;
+    padding: 16px 24px !important;
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.modal-body {
+    padding: 24px !important;
+}
+
+.modal-footer {
+    background-color: var(--db-bg-light) !important;
+    border-top: 1px solid var(--db-border) !important;
+    padding: 12px 24px !important;
+    border-radius: 0 0 8px 8px !important;
+}
+
+/* Upload Area */
+.dcc-upload {
+    border: 2px dashed var(--db-border) !important;
+    border-radius: 6px !important;
+    background-color: var(--db-bg-light) !important;
+    transition: all 0.2s ease;
+}
+
+.dcc-upload:hover {
+    border-color: var(--db-primary) !important;
+    background-color: #E8F7F2 !important;
+}
+
+/* Loading Spinner */
+.spinner-border {
+    color: var(--db-primary) !important;
+}
+
+/* HR */
+hr {
+    border-color: var(--db-border) !important;
+    opacity: 1 !important;
+}
+
+/* Text Colors */
+.text-muted {
+    color: var(--db-text-muted) !important;
+}
+
+.text-secondary {
+    color: var(--db-text-secondary) !important;
+}
+
+/* Badge */
+.badge {
+    border-radius: 12px !important;
+    padding: 4px 10px !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+}
+
+/* Link Buttons */
+.btn-link {
+    color: var(--db-primary) !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+}
+
+.btn-link:hover {
+    color: var(--db-primary-hover) !important;
+    text-decoration: underline !important;
+}
+
+/* Details/Summary for collapsible sections */
+details summary {
+    cursor: pointer;
+    color: var(--db-primary);
+    font-weight: 500;
+    padding: 8px 0;
+    user-select: none;
+}
+
+details summary:hover {
+    color: var(--db-primary-hover);
+}
+
+details[open] summary {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--db-border);
+}
+
+/* Table */
+.table {
+    border-color: var(--db-border) !important;
+}
+
+.table thead th {
+    background-color: var(--db-bg-light) !important;
+    color: var(--db-text-primary) !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid var(--db-border) !important;
+}
+
+.table tbody tr:hover {
+    background-color: var(--db-bg-light) !important;
+}
+
+/* Dropdown */
+.dropdown-menu {
+    border-radius: 6px !important;
+    border: 1px solid var(--db-border) !important;
+    box-shadow: var(--db-shadow-md) !important;
+    padding: 4px !important;
+}
+
+.dropdown-item {
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+    transition: all 0.15s ease;
+    font-size: 14px !important;
+}
+
+.dropdown-item:hover {
+    background-color: var(--db-bg-light) !important;
+    color: var(--db-primary) !important;
+}
+
+/* Progress Bar */
+.progress {
+    border-radius: 4px !important;
+    background-color: var(--db-bg-light) !important;
+}
+
+.progress-bar {
+    background-color: var(--db-primary) !important;
+}
+
+/* Collapse */
+.collapse {
+    transition: all 0.3s ease;
+}
+
+/* Sidebar Navigation Links */
+.nav-link-btn {
+    color: var(--db-text-secondary) !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    padding: 10px 16px !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+    background-color: transparent !important;
+    border: none !important;
+    font-size: 14px !important;
+}
+
+.nav-link-btn:hover {
+    background-color: var(--db-bg-light) !important;
+    color: var(--db-primary) !important;
+}
+
+.nav-link-btn.active {
+    background-color: #E8F7F2 !important;
+    color: var(--db-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Custom scrollbar (for webkit browsers) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--db-bg-light);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--db-border-hover);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--db-text-muted);
+}
+

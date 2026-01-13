@@ -68,14 +68,15 @@ except Exception as e:
     sys.exit(1)
 
 print("🔧 Initializing Dash app...")
+# Use Bootstrap as base + custom Databricks styling (from assets/databricks_style.css)
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # Suppress callback exceptions for dynamically generated components
 app.config.suppress_callback_exceptions = True
-print("✅ Dash app created")
+print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<databricks_token>'
+DATABRICKS_TOKEN = '<insert your token here>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -139,7 +140,7 @@ except Exception as e:
     sys.exit(1)
 
 
-app.layout = dbc.Container([
+app.layout = html.Div([
     # Store for extracted columns and dashboard config
     dcc.Store(id='extracted-columns'),
     dcc.Store(id='extracted-columns-types'),  # Store for column types from UC tables
@@ -159,6 +160,7 @@ app.layout = dbc.Container([
     dcc.Store(id='infusion-design-data', data=None),  # Store for design infusion extracted data
     dcc.Store(id='current-dashboard-config', data=None),  # Store current dashboard config for infusion (NEW DASHBOARD PAGE)
     dcc.Store(id='current-dashboard-name', data=None),  # Store current dashboard name for infusion (NEW DASHBOARD PAGE)
+    dcc.Store(id='active-page', data='new-dashboard'),  # Store for active page
     
     # Separate stores for EXISTING DASHBOARD PAGE
     dcc.Store(id='existing-dashboard-id', data=None),  # Store for existing dashboard ID
@@ -174,30 +176,84 @@ app.layout = dbc.Container([
     
     dcc.Interval(id='ai-progress-interval', interval=500, disabled=True, n_intervals=0, max_intervals=300),  # Poll every 500ms, max 2.5 mins
     
+    # Layout with fixed sidebar
     dbc.Row([
+        # Fixed Sidebar Navigation
         dbc.Col([
-            html.H1("Dashboard Design & Insight Lab", className="text-center mb-4 mt-4"),
-            html.Hr()
-        ])
-    ]),
-    
-    # Tabs for New Dashboard vs Existing Dashboard vs Test Function
-    dbc.Tabs([
-        # Tab 1: New Dashboard
-        dbc.Tab(label="📝 New Dashboard", tab_id="tab-new", children=[
-            get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA)
-        ]),
+            html.Div([
+                # Header
+                html.Div([
+                    html.H5("Dashboard Lab", style={
+                        'fontSize': '18px',
+                        'fontWeight': '700',
+                        'color': '#1F272D',
+                        'marginBottom': '8px'
+                    }),
+                    html.P("AI-Powered Design", style={
+                        'fontSize': '12px',
+                        'color': '#8B98A3',
+                        'marginBottom': '24px'
+                    })
+                ]),
+                
+                # Navigation Links
+                html.Div([
+                    dbc.Button([
+                        html.I(className="me-2"),
+                        "📝 New Dashboard"
+                    ], id="nav-new-dashboard", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0),
+                    
+                    dbc.Button([
+                        html.I(className="me-2"),
+                        "📂 Existing Dashboard"
+                    ], id="nav-existing-dashboard", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0),
+                    
+                    dbc.Button([
+                        html.I(className="me-2"),
+                        "🔍 Layout Analyzer"
+                    ], id="nav-layout-analyzer", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0)
+                ])
+            ], style={
+                'position': 'fixed',
+                'top': '0',
+                'left': '0',
+                'width': '240px',
+                'height': '100vh',
+                'backgroundColor': '#FFFFFF',
+                'borderRight': '1px solid #E0E5E8',
+                'padding': '24px 16px',
+                'overflowY': 'auto',
+                'zIndex': '1000'
+            })
+        ], width=2, style={'padding': '0'}),
         
-        # Tab 2: Existing Dashboard
-        dbc.Tab(label="📂 Existing Dashboard", tab_id="tab-existing", children=[
-            get_existing_dashboard_layout()
-        ]),
-        
-        # Tab 3: Test Function - Dashboard Layout Analyzer
-        dbc.Tab(label="🔍 Layout Analyzer", tab_id="tab-test", children=[
-            get_test_function_layout()
-        ])
-    ], id="main-tabs", active_tab="tab-new"),
+        # Main Content Area
+        dbc.Col([
+            dbc.Container([
+                # Header
+                html.Div([
+                    html.H1("Dashboard Design & Insight Lab", 
+                           style={
+                               'fontSize': '28px',
+                               'fontWeight': '700',
+                               'letterSpacing': '-0.5px',
+                               'marginBottom': '8px',
+                               'color': '#1F272D'
+                           }),
+                    html.P("Create, analyze, and customize Lakeview dashboards with AI-powered design", 
+                          style={
+                              'fontSize': '14px',
+                              'color': '#5A6C75',
+                              'marginBottom': '0'
+                          })
+                ], style={'padding': '24px 0 16px 0'}),
+                html.Hr(style={'margin': '0 0 24px 0', 'borderColor': '#E0E5E8'}),
+                
+                # Dynamic content area
+                html.Div(id='page-content')
+            ], fluid=True)
+        ], width=10, style={'marginLeft': '240px', 'padding': '0'}),
+    ], style={'margin': '0'}),
     
     # Modal for applying infusion to existing dashboard (shared between tabs)
     dbc.Modal([
@@ -363,7 +419,7 @@ app.layout = dbc.Container([
         ])
     ], id="existing-infusion-modal", size="xl", is_open=False)
     
-], fluid=True, className="p-4")
+])
 
 
 @callback(
@@ -1076,6 +1132,69 @@ print("✅ Manual dashboard configuration callbacks registered")
 print("📋 Registering test function page callbacks...")
 register_test_function_callbacks(app, llm_client)
 print("✅ Test function page callbacks registered")
+
+
+# ============================================================================
+# SIDEBAR NAVIGATION CALLBACK
+# ============================================================================
+
+@callback(
+    [Output('page-content', 'children'),
+     Output('active-page', 'data'),
+     Output('nav-new-dashboard', 'className'),
+     Output('nav-existing-dashboard', 'className'),
+     Output('nav-layout-analyzer', 'className')],
+    [Input('nav-new-dashboard', 'n_clicks'),
+     Input('nav-existing-dashboard', 'n_clicks'),
+     Input('nav-layout-analyzer', 'n_clicks')],
+    [State('active-page', 'data')],
+    prevent_initial_call=False
+)
+def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
+    """Handle sidebar navigation"""
+    from dash import callback_context
+    
+    # Default to new dashboard on initial load
+    if not callback_context.triggered:
+        return (
+            get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
+            'new-dashboard',
+            'w-100 text-start mb-2 nav-link-btn active',
+            'w-100 text-start mb-2 nav-link-btn',
+            'w-100 text-start mb-2 nav-link-btn'
+        )
+    
+    trigger_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    
+    if trigger_id == 'nav-new-dashboard':
+        return (
+            get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
+            'new-dashboard',
+            'w-100 text-start mb-2 nav-link-btn active',
+            'w-100 text-start mb-2 nav-link-btn',
+            'w-100 text-start mb-2 nav-link-btn'
+        )
+    elif trigger_id == 'nav-existing-dashboard':
+        return (
+            get_existing_dashboard_layout(),
+            'existing-dashboard',
+            'w-100 text-start mb-2 nav-link-btn',
+            'w-100 text-start mb-2 nav-link-btn active',
+            'w-100 text-start mb-2 nav-link-btn'
+        )
+    elif trigger_id == 'nav-layout-analyzer':
+        return (
+            get_test_function_layout(),
+            'layout-analyzer',
+            'w-100 text-start mb-2 nav-link-btn',
+            'w-100 text-start mb-2 nav-link-btn',
+            'w-100 text-start mb-2 nav-link-btn active'
+        )
+    
+    # Fallback (shouldn't happen)
+    return no_update, no_update, no_update, no_update, no_update
+
+print("✅ Sidebar navigation callback registered")
 
 
 # Expose the Flask server for WSGI deployment (Databricks Apps, Gunicorn, etc.)
