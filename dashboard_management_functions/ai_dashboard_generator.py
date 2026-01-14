@@ -816,12 +816,16 @@ EXAMPLES:
         success_alert = dbc.Alert(status_items, color="success", dismissable=True)
         
         # Store results FIRST (before marking as complete to avoid race condition)
+        # Wrap dashboard_config in the format expected by infusion callbacks
         ai_results_store[session_id] = {
             'status': success_alert,
             'progress': "",
             'preview': preview_card,
             'dashboard_id': dashboard_id,
-            'dashboard_config': dashboard_config,
+            'dashboard_config': {
+                'serialized_dashboard': dashboard_config,
+                'display_name': dashboard_name
+            },
             'dashboard_name': dashboard_name
         }
         
