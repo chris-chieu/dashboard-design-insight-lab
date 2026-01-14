@@ -759,6 +759,10 @@ EXAMPLES:
         dashboard_id = dashboard_manager.create_dashboard(dashboard_config, dashboard_name)
         embed_url = dashboard_manager.get_embed_url(dashboard_id)
         
+        # Construct the actual dashboard URL (not embed URL)
+        workspace_url = dashboard_manager.workspace_client.config.host
+        dashboard_url = f"{workspace_url}/dashboardsv3/{dashboard_id}"
+        
         ai_progress_store[session_id]['steps'].append('✅ Step 14: Dashboard deployed successfully!')
         
         # Create preview
@@ -766,12 +770,18 @@ EXAMPLES:
             dbc.CardHeader([
                 dbc.Row([
                     dbc.Col([
-                        html.H4(f"✅ AI Generated Dashboard: {dashboard_name}"),
-                        html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
+                        html.H4(f"Generated Dashboard: {dashboard_name}"),
+                        html.A(
+                            "Open Dashboard in New Tab",
+                            href=dashboard_url,
+                            target="_blank",
+                            className="text-decoration-none",
+                            style={'fontSize': '13px'}
+                        )
                     ], width=7),
                     dbc.Col([
-                        dbc.Button("🎨 Infusion", id="apply-infusion-btn", color="primary", size="sm", className="me-2"),
-                        dbc.Button("🗑️ Delete Dashboard", id="delete-dashboard-btn", color="danger", size="sm")
+                        dbc.Button("Apply Infusion", id="apply-infusion-btn", color="primary", size="sm", className="me-2"),
+                        dbc.Button("Delete Dashboard", id="delete-dashboard-btn", color="danger", size="sm")
                     ], width=5, className="text-end")
                 ], align="center")
             ]),
@@ -790,7 +800,7 @@ EXAMPLES:
         
         # Build success message
         status_items = [
-            html.Strong("🎉 Dashboard generated successfully!"),
+            html.Strong("Dashboard generated successfully!"),
             html.Br(),
             html.Small(f"Created: {dashboard_name}"),
             html.Br(),

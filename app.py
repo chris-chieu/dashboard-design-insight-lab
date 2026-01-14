@@ -76,7 +76,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<databricks_token>'
+DATABRICKS_TOKEN = '<insert your token here>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -200,17 +200,17 @@ app.layout = html.Div([
                 html.Div([
                     dbc.Button([
                         html.I(className="me-2"),
-                        "📝 New Dashboard"
+                        "New Dashboard"
                     ], id="nav-new-dashboard", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0),
                     
                     dbc.Button([
                         html.I(className="me-2"),
-                        "📂 Existing Dashboard"
+                        "Existing Dashboard"
                     ], id="nav-existing-dashboard", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0),
                     
                     dbc.Button([
                         html.I(className="me-2"),
-                        "🔍 Layout Analyzer"
+                        "Layout Analyzer"
                     ], id="nav-layout-analyzer", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0)
                 ])
             ], style={
@@ -257,7 +257,7 @@ app.layout = html.Div([
     
     # Modal for applying infusion to new dashboard (after generation)
     dbc.Modal([
-        dbc.ModalHeader(dbc.ModalTitle("🎨 Apply Design Infusion")),
+        dbc.ModalHeader(dbc.ModalTitle("Apply Design Infusion")),
         dbc.ModalBody([
             html.P("Choose how you want to generate your design:", className="mb-3"),
             
@@ -267,12 +267,12 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.Card([
                         dbc.CardBody([
-                            html.H6("📷 Option 1: Upload an Image", className="mb-3"),
+                            html.H6("Option 1: Upload an Image", className="mb-3"),
                             html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-3"),
                             dcc.Upload(
                                 id='dashboard-infusion-upload',
                                 children=html.Div([
-                                    '📷 Drag and Drop or ',
+                                    'Drag and Drop or ',
                                     html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
                                 ]),
                                 style={
@@ -296,7 +296,7 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.Card([
                         dbc.CardBody([
-                            html.H6("✍️ Option 2: Describe Your Design", className="mb-3"),
+                            html.H6("Option 2: Describe Your Design", className="mb-3"),
                             html.P("Describe the style you want (e.g., 'Modern minimalist').", className="text-muted small mb-3"),
                             dbc.Textarea(
                                 id='dashboard-infusion-prompt',
@@ -304,7 +304,7 @@ app.layout = html.Div([
                                 style={'width': '100%', 'minHeight': '80px'},
                                 className="mb-2"
                             ),
-                            dbc.Button("✨ Generate Design", id="generate-design-from-prompt-btn", color="primary", size="sm")
+                            dbc.Button("Generate Design", id="generate-design-from-prompt-btn", color="primary", size="sm")
                         ])
                     ], style={'height': '100%'})
                 ], width=6)
@@ -323,7 +323,7 @@ app.layout = html.Div([
     
     # Separate Modal for Existing Dashboard Page (Enhanced with Intelligent Workflow)
     dbc.Modal([
-        dbc.ModalHeader(dbc.ModalTitle("🎨 Intelligent Design Infusion")),
+        dbc.ModalHeader(dbc.ModalTitle("Intelligent Design Infusion")),
         dbc.ModalBody([
             html.P("Choose how you want to generate your design:", className="mb-3"),
             
@@ -333,12 +333,12 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.Card([
                         dbc.CardBody([
-                            html.H6("📷 Option 1: Upload an Image", className="mb-3"),
+                            html.H6("Option 1: Upload an Image", className="mb-3"),
                             html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-3"),
                             dcc.Upload(
                                 id='existing-dashboard-infusion-upload',
                                 children=html.Div([
-                                    '📷 Drag and Drop or ',
+                                    'Drag and Drop or ',
                                     html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
                                 ]),
                                 style={
@@ -362,7 +362,7 @@ app.layout = html.Div([
                 dbc.Col([
                     dbc.Card([
                         dbc.CardBody([
-                            html.H6("✍️ Option 2: Describe Your Design (AI-Assisted)", className="mb-3"),
+                            html.H6("Option 2: Describe Your Design (AI-Assisted)", className="mb-3"),
                             html.P("Describe the style you want. AI will analyze your dashboard and explain design choices before applying.", className="text-muted small mb-3"),
                             dbc.Textarea(
                                 id='existing-dashboard-infusion-prompt',
@@ -370,7 +370,7 @@ app.layout = html.Div([
                                 style={'width': '100%', 'minHeight': '80px'},
                                 className="mb-2"
                             ),
-                            dbc.Button("🔍 Analyze & Generate Design", id="existing-generate-design-from-prompt-btn", color="primary", size="sm")
+                            dbc.Button("Analyze & Generate Design", id="existing-generate-design-from-prompt-btn", color="primary", size="sm")
                         ])
                     ], style={'height': '100%'})
                 ], width=6)
@@ -395,15 +395,15 @@ app.layout = html.Div([
                 children=[
                     html.Hr(className="my-3"),
                     dbc.ButtonGroup([
-                        dbc.Button("✅ Validate & Apply Design", id="existing-validate-design-btn", color="success", size="sm"),
-                        dbc.Button("✏️ Refine Design", id="existing-refine-design-btn", color="warning", size="sm")
+                        dbc.Button("Validate & Apply Design", id="existing-validate-design-btn", color="success", size="sm"),
+                        dbc.Button("Refine Design", id="existing-refine-design-btn", color="warning", size="sm")
                     ], className="mb-3 w-100"),
                     
                     # Refinement Input (hidden by default)
                     dbc.Collapse(
                         dbc.Card([
                             dbc.CardBody([
-                                html.H6("💬 Provide Refinement Feedback:", className="mb-2"),
+                                html.H6("Provide Refinement Feedback:", className="mb-2"),
                                 html.P("Tell the AI what to improve (e.g., 'Make colors darker', 'Use more blue', 'Increase contrast')", 
                                        className="text-muted small mb-2"),
                                 dbc.Textarea(
@@ -411,7 +411,7 @@ app.layout = html.Div([
                                     placeholder="Example: Make the blue darker and add more contrast between widgets...",
                                     style={'minHeight': '80px'}
                                 ),
-                                dbc.Button("🔄 Apply Refinement", id="existing-apply-refinement-btn", color="primary", size="sm", className="mt-2")
+                                dbc.Button("Apply Refinement", id="existing-apply-refinement-btn", color="primary", size="sm", className="mt-2")
                             ])
                         ]),
                         id="existing-refinement-collapse",
@@ -712,8 +712,8 @@ def apply_infusion_to_new_dashboard(contents, prompt_btn_clicks, filename, promp
                         html.Small(f"Dashboard ID: {new_dashboard_id}", className="text-muted")
                     ], width=7),
                     dbc.Col([
-                        dbc.Button("🎨 Infusion", id="apply-infusion-btn", color="primary", size="sm", className="me-2"),
-                            dbc.Button("🗑️ Delete Dashboard", id="delete-dashboard-btn", color="danger", size="sm")
+                        dbc.Button("Apply Infusion", id="apply-infusion-btn", color="primary", size="sm", className="me-2"),
+                            dbc.Button("Delete Dashboard", id="delete-dashboard-btn", color="danger", size="sm")
                     ], width=5, className="text-end")
                 ], align="center")
             ]),
@@ -848,8 +848,8 @@ def generate_design_for_existing_dashboard(contents, prompt_btn_clicks, filename
                             html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
                         ], width=7),
                         dbc.Col([
-                            dbc.Button("🎨 Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
-                            dbc.Button("🗑️ Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
+                            dbc.Button("Apply Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
+                            dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
                         ], width=5, className="text-end")
                     ], align="center")
                 ]),

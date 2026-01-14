@@ -24,7 +24,7 @@ def get_existing_dashboard_layout():
         dbc.Row([
             dbc.Col([
                 dbc.Card([
-                    dbc.CardHeader(html.H4("🔍 Retrieve Dashboard by ID")),
+                    dbc.CardHeader(html.H4("Retrieve Dashboard by ID")),
                     dbc.CardBody([
                         dbc.Row([
                             dbc.Col([
@@ -36,7 +36,7 @@ def get_existing_dashboard_layout():
                                     type="text",
                                     className="mb-3"
                                 ),
-                                dbc.Button("🔍 Retrieve Dashboard", id="retrieve-dashboard-btn", color="primary", className="mb-2"),
+                                dbc.Button("Retrieve Dashboard", id="retrieve-dashboard-btn", color="primary", className="mb-2"),
                                 html.Div(id='retrieve-dashboard-status', className="mt-3")
                             ], width=6)
                         ])
@@ -118,7 +118,7 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
              dbc.Alert([
                  html.Div([
                      dbc.Spinner(size="sm"),
-                     html.Span("🔒 Checking permissions...", style={"marginLeft": "10px"})
+                     html.Span("Checking permissions...", style={"marginLeft": "10px"})
                  ], style={"display": "flex", "alignItems": "center"})
              ], color="info"), 
              "")
@@ -237,12 +237,12 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
                 dbc.CardHeader([
                     dbc.Row([
                         dbc.Col([
-                            html.H4(f"✅ {dashboard_name}"),
+                            html.H4(f"{dashboard_name}"),
                             html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
                         ], width=7),
                         dbc.Col([
-                            dbc.Button("🎨 Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
-                            dbc.Button("🗑️ Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
+                            dbc.Button("Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
+                            dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
                         ], width=5, className="text-end")
                     ], align="center")
                 ]),

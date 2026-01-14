@@ -19,7 +19,7 @@ def get_test_function_layout():
     return html.Div([
         dbc.Row([
             dbc.Col([
-                html.H3("🔍 Dashboard Layout Analyzer", className="text-center mb-3 mt-3"),
+                html.H3("Dashboard Layout Analyzer", className="text-center mb-3 mt-3"),
                 html.P(
                     "Upload a dashboard screenshot and AI will analyze its layout structure, "
                     "identifying widget types and positions.",
@@ -32,13 +32,13 @@ def get_test_function_layout():
         dbc.Row([
             dbc.Col([
                 dbc.Card([
-                    dbc.CardHeader(html.H4("📷 Upload Dashboard Screenshot")),
+                    dbc.CardHeader(html.H4("Upload Dashboard Screenshot")),
                     dbc.CardBody([
                         html.P("Upload an image of a dashboard to analyze its layout:", className="mb-3"),
                         dcc.Upload(
                             id='dashboard-layout-upload',
                             children=html.Div([
-                                '🖼️ Drag and Drop or ',
+                                'Drag and Drop or ',
                                 html.A('Select Dashboard Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
                             ]),
                             style={
@@ -87,7 +87,7 @@ def get_test_function_layout():
                     style={'display': 'none'},  # Hidden by default
                     children=[
                         dbc.Card([
-                            dbc.CardHeader(html.H5("🔄 Refine Analysis")),
+                            dbc.CardHeader(html.H5("Refine Analysis")),
                             dbc.CardBody([
                                 html.P([
                                     "Provide additional context or corrections to improve the analysis. ",
@@ -109,7 +109,7 @@ def get_test_function_layout():
                                 ),
                                 html.Div([
                                     dbc.Button(
-                                        "🔍 Refine Analysis",
+                                        "Refine Analysis",
                                         id="submit-refinement-btn",
                                         color="primary",
                                         size="md"
@@ -315,7 +315,7 @@ Analyze the dashboard and return ONLY the JSON output.
                 
                 # Widgets table
                 widgets_table = dbc.Card([
-                    dbc.CardHeader(html.H5("🎯 Detected Widgets")),
+                    dbc.CardHeader(html.H5("Detected Widgets")),
                     dbc.CardBody([
                         dbc.Table([
                             html.Thead([
@@ -342,7 +342,7 @@ Analyze the dashboard and return ONLY the JSON output.
                 
                 # JSON output card
                 json_card = dbc.Card([
-                    dbc.CardHeader(html.H5("📄 Raw JSON Output")),
+                    dbc.CardHeader(html.H5("Raw JSON Output")),
                     dbc.CardBody([
                         html.Pre(
                             json.dumps(analysis_data, indent=2),
@@ -371,11 +371,11 @@ Analyze the dashboard and return ONLY the JSON output.
                 # Validation buttons section (separate output)
                 validation_section = dbc.Card([
                     dbc.CardBody([
-                        html.H5("📋 Validate Results", className="mb-3"),
+                        html.H5("Validate Results", className="mb-3"),
                         html.P("Are these results accurate? You can validate them or provide refinement instructions.", className="text-muted"),
                         dbc.ButtonGroup([
-                            dbc.Button("✅ Validate", id="validate-layout-btn", color="success", className="me-2", size="md"),
-                            dbc.Button("🔄 Refine Analysis", id="refine-layout-btn", color="warning", size="md")
+                            dbc.Button("Validate", id="validate-layout-btn", color="success", className="me-2", size="md"),
+                            dbc.Button("Refine Analysis", id="refine-layout-btn", color="warning", size="md")
                         ])
                     ])
                 ], className="mb-3")
@@ -499,7 +499,7 @@ Analyze the dashboard and return ONLY the JSON output.
             # Show processing status
             processing_alert = dbc.Alert([
                 dbc.Spinner(size="sm"),
-                html.Span(" 🔍 Refining analysis with your feedback...", style={"marginLeft": "10px"})
+                html.Span(" Refining analysis with your feedback...", style={"marginLeft": "10px"})
             ], color="info")
             
             # Prepare refined prompt
@@ -605,7 +605,7 @@ Analyze the dashboard again with the refinements and return ONLY the updated JSO
                 
                 # Widgets table
                 widgets_table = dbc.Card([
-                    dbc.CardHeader(html.H5("🎯 Refined Widget Detection")),
+                    dbc.CardHeader(html.H5("Refined Widget Detection")),
                     dbc.CardBody([
                         dbc.Table([
                             html.Thead([

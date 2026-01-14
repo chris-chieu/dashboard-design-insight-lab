@@ -151,7 +151,7 @@ IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks
         
         # Create display with formatted JSON
         result_text = html.Div([
-            html.H6("🎨 Extracted Design Elements", className="mb-3"),
+            html.H6("Extracted Design Elements", className="mb-3"),
             html.Div([
                 html.P([
                     html.Strong("Canvas Background Color: "),
@@ -368,9 +368,9 @@ IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks
         
         # Create display with formatted JSON
         result_text = html.Div([
-            html.H6("🎨 AI-Generated Design Elements", className="mb-3"),
+            html.H6("AI-Generated Design Elements", className="mb-3"),
             dbc.Alert([
-                html.Strong("💡 AI Interpretation: "),
+                html.Strong("AI Interpretation: "),
                 html.Span(f'Generated design based on: "{prompt_text}"')
             ], color="info", className="mb-3"),
             html.Div([
@@ -555,7 +555,7 @@ def generate_design_with_analysis(prompt_text, dashboard_config, llm_client):
         
         # Create analysis display
         analysis_display = html.Div([
-            html.H6("📊 Dashboard Analysis", className="mb-3"),
+            html.H6("Dashboard Analysis", className="mb-3"),
             dbc.Card([
                 dbc.CardBody([
                     html.P([
@@ -619,32 +619,32 @@ Please provide your response in FOUR parts:
 PART 1 - QUICK SUMMARY (Before → After comparison):
 Provide a concise before/after comparison in this EXACT format:
 
-🎨 Canvas Background: [old color] → [new color] ([brief 3-5 word reason])
-📦 Widget Background: [old color] → [new color] ([brief 3-5 word reason])
-✍️ Font: [old font] → [new font] ([brief 3-5 word reason])
-🎯 Font Color: [old color] → [new color] ([brief 3-5 word reason])
-📊 Visualization Palette: [brief description of old] → [brief description of new] ([brief 3-5 word reason])
+Canvas Background: [old color] → [new color] ([brief 3-5 word reason])
+Widget Background: [old color] → [new color] ([brief 3-5 word reason])
+Font: [old font] → [new font] ([brief 3-5 word reason])
+Font Color: [old color] → [new color] ([brief 3-5 word reason])
+Visualization Palette: [brief description of old] → [brief description of new] ([brief 3-5 word reason])
 
 Example:
-🎨 Canvas Background: #FAFAFB → #1A1A2E (darker, more focused aesthetic)
-📦 Widget Background: #FFFFFF → #16213E (improved contrast and depth)
-✍️ Font: Arial → Georgia (more elegant, professional look)
-🎯 Font Color: #11171C → #EAEAEA (better readability on dark)
-📊 Visualization Palette: Standard blues/greens → Vibrant neon palette (modern, high-energy aesthetic)
+Canvas Background: #FAFAFB → #1A1A2E (darker, more focused aesthetic)
+Widget Background: #FFFFFF → #16213E (improved contrast and depth)
+Font: Arial → Georgia (more elegant, professional look)
+Font Color: #11171C → #EAEAEA (better readability on dark)
+Visualization Palette: Standard blues/greens → Vibrant neon palette (modern, high-energy aesthetic)
 
 PART 2 - CURRENT STYLE FEEDBACK:
 Evaluate the current dashboard design in a structured format:
 
-✅ What works well:
+What works well:
 [Describe what's good about current colors, contrast, readability]
 
-⚠️ What could be improved:
+What could be improved:
 [Specific issues with current colors, font, etc. If the design is already excellent, state "The current design is already well-executed with good color choices, contrast, and readability. No major improvements needed from a design quality perspective."]
 
-📊 Impact on usability:
+Impact on usability:
 [How the current design affects dashboard usability - be honest if it's already good]
 
-💡 Overall impression:
+Overall impression:
 [Professional, casual, cluttered, clean, etc. and why - acknowledge if the design is already strong]
 
 IMPORTANT: Use line breaks between each section for readability.
@@ -653,22 +653,22 @@ NOTE: Be honest - if the current design is already visually appealing and follow
 PART 3 - NEW DESIGN REASONING:
 Explain your new design choices in a structured format:
 
-🎯 Design interpretation:
+Design interpretation:
 [How the user's request translates to visual design]
 
-🔧 Specific changes:
+Specific changes:
 [What changes you're making to achieve the user's requested style. If the current design is already good, frame this as "style transformation" rather than "fixes" - e.g., "While the current design is solid, we're transforming it to match the user's requested [style] aesthetic by..."]
 
-🎨 Color palette rationale:
+Color palette rationale:
 [What palette represents this style and why]
 
-📈 Readability enhancement:
+Readability enhancement:
 [How these colors will maintain or enhance readability for the {analysis['total_widgets']} widgets. If current design is already readable, emphasize "maintaining excellent readability while..."]
 
-✍️ Font choice:
+Font choice:
 [What font complements this aesthetic and why. If keeping same font because it works well, explain why it remains a good choice.]
 
-🔍 Special considerations:
+Special considerations:
 [Any layout-specific considerations]
 
 IMPORTANT: Use line breaks between each section for readability.
@@ -773,7 +773,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
         
         # Create reasoning display with summary and collapsible details
         reasoning_display = html.Div([
-            html.H6("💡 Design Changes Summary", className="mb-3"),
+            html.H6("Design Changes Summary", className="mb-3"),
             
             # Summary Card - Prominent at top
             dbc.Card([
@@ -785,7 +785,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
             # Collapsible detailed analysis section using HTML details/summary
             html.Details([
                 html.Summary(
-                    "📖 View Detailed Analysis & Reasoning",
+                    "View Detailed Analysis & Reasoning",
                     style={
                         'cursor': 'pointer',
                         'color': '#007bff',
@@ -797,7 +797,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
                 html.Div([
                     # Current Style Feedback Section
                     dbc.Card([
-                        dbc.CardHeader(html.H6("🔍 Current Dashboard Style Feedback", className="mb-0")),
+                        dbc.CardHeader(html.H6("Current Dashboard Style Feedback", className="mb-0")),
                         dbc.CardBody([
                             html.P(current_style_feedback, className="mb-0", style={'whiteSpace': 'pre-wrap'})
                         ])
@@ -805,11 +805,11 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
                     
                     # New Design Reasoning Section
                     dbc.Card([
-                        dbc.CardHeader(html.H6("✨ New Design Reasoning", className="mb-0")),
+                        dbc.CardHeader(html.H6("New Design Reasoning", className="mb-0")),
                         dbc.CardBody([
                             html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
                             html.Hr(),
-                            html.H6("🎨 Generated Design Colors:", className="mb-2"),
+                            html.H6("Generated Design Colors:", className="mb-2"),
                             html.P([
                                 html.Strong("Canvas: "),
                                 html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 
@@ -1011,11 +1011,11 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
         
         # Create refined reasoning display with summary and collapsible details
         reasoning_display = html.Div([
-            html.H6("💡 Refined Design Summary", className="mb-3"),
+            html.H6("Refined Design Summary", className="mb-3"),
             
             # Show user's feedback
             dbc.Alert([
-                html.Strong("📝 Your Feedback: "),
+                html.Strong("Your Feedback: "),
                 html.Span(f'"{feedback_prompt}"')
             ], color="warning", className="mb-2"),
             
@@ -1029,7 +1029,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
             # Collapsible detailed analysis section using HTML details/summary
             html.Details([
                 html.Summary(
-                    "📖 View Detailed Analysis & Reasoning",
+                    "View Detailed Analysis & Reasoning",
                     style={
                         'cursor': 'pointer',
                         'color': '#007bff',
@@ -1041,7 +1041,7 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
                 html.Div([
                     # Current Style Feedback Section
                     dbc.Card([
-                        dbc.CardHeader(html.H6("🔍 Previous Design Evaluation", className="mb-0")),
+                        dbc.CardHeader(html.H6("Previous Design Evaluation", className="mb-0")),
                         dbc.CardBody([
                             html.P(current_style_feedback, className="mb-0", style={'whiteSpace': 'pre-wrap'})
                         ])
@@ -1049,11 +1049,11 @@ IMPORTANT: Return ONLY valid JSON without markdown formatting."""
                     
                     # Refinement Reasoning Section
                     dbc.Card([
-                        dbc.CardHeader(html.H6("✨ Refinement Reasoning", className="mb-0")),
+                        dbc.CardHeader(html.H6("Refinement Reasoning", className="mb-0")),
                         dbc.CardBody([
                             html.P(reasoning_text, className="mb-3", style={'whiteSpace': 'pre-wrap'}),
                             html.Hr(),
-                            html.H6("🎨 Refined Design Colors:", className="mb-2"),
+                            html.H6("Refined Design Colors:", className="mb-2"),
                             html.P([
                                 html.Strong("Canvas: "),
                                 html.Span(design_data.get('canvasBackgroundColor', 'N/A'), 

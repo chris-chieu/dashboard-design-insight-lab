@@ -30,7 +30,7 @@ def get_new_dashboard_layout(unity_catalog="christophe_chieu", unity_schema="cer
         dbc.Row([
             dbc.Col([
                 dbc.Card([
-                    dbc.CardHeader(html.H4("🔍 Inspect Unity Catalog Tables")),
+                    dbc.CardHeader(html.H4("Unity Catalog Tables")),
                     dbc.CardBody([
                         dbc.Row([
                             dbc.Col([
@@ -256,7 +256,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             return dbc.Row([
                 dbc.Col([
                     dbc.Card([
-                        dbc.CardHeader(html.H6(f"📋 Columns in {selected_table.split('.')[-1]}")),
+                        dbc.CardHeader(html.H6(f"Columns in {selected_table.split('.')[-1]}")),
                         dbc.CardBody([
                             html.P(f"Total columns: {len(columns)}", className="fw-bold mb-3"),
                             html.Div([
@@ -273,7 +273,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                             html.Hr(),
                             html.Div([
                                 dbc.Button(
-                                    "✅ Confirm & Proceed to AI Dashboard Generation",
+                                    "Confirm & Proceed to AI Dashboard Generation",
                                     id="uc-table-confirm-btn",
                                     color="success",
                                     size="md",
@@ -303,7 +303,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
              dbc.Alert([
                  html.Div([
                      dbc.Spinner(size="sm"),
-                     html.Span("🔒 Checking permissions...", style={"marginLeft": "10px"})
+                     html.Span("Checking permissions...", style={"marginLeft": "10px"})
                  ], style={"display": "flex", "alignItems": "center"})
              ], color="info"), 
              "")
@@ -352,12 +352,12 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             
             # Create AI dashboard generator section
             ai_section = dbc.Card([
-                dbc.CardHeader(html.H4("🤖 Step 2.5: AI-Powered Dashboard Generator")),
+                dbc.CardHeader(html.H4("AI-Powered Dashboard Generator")),
                 dbc.CardBody([
                     dbc.Row([
                         dbc.Col([
                             dbc.Alert([
-                                html.Strong("✅ Unity Catalog table loaded successfully!"),
+                                html.Strong("Table loaded successfully!"),
                                 html.Br(),
                                 html.Small(f"Table: {selected_table}"),
                                 html.Br(),
@@ -373,11 +373,11 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                 dbc.CardBody([
                                     dbc.Row([
                                         dbc.Col([
-                                            html.H6("🎨 Design Infusion (Optional)", className="mb-0"),
+                                            html.H6("Design Infusion (Optional)", className="mb-0"),
                                             html.Small("Extract colors and fonts from an image or describe your style", className="text-muted")
                                         ], width=8),
                                         dbc.Col([
-                                            dbc.Button("🎨 Design Options", id="infusion-toggle-btn", color="info", size="sm", outline=True, className="float-end")
+                                            dbc.Button("Design Options", id="infusion-toggle-btn", color="info", size="sm", outline=True, className="float-end")
                                         ], width=4)
                                     ]),
                                     dbc.Collapse([
@@ -385,12 +385,12 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                         dbc.Row([
                                             # Option 1: Upload Image
                                             dbc.Col([
-                                                html.Label("📷 Option 1: Upload an Image", className="fw-bold mb-2"),
+                                                html.Label("Option 1: Upload an Image", className="fw-bold mb-2"),
                                                 html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-2"),
                                                 dcc.Upload(
                                                     id='infusion-image-upload',
                                                     children=html.Div([
-                                                        '📷 Drag and Drop or ',
+                                                        'Drag and Drop or ',
                                                         html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
                                                     ]),
                                                     style={
@@ -415,7 +415,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                             
                                             # Option 2: Text Prompt
                                             dbc.Col([
-                                                html.Label("✍️ Option 2: Describe Your Style", className="fw-bold mb-2"),
+                                                html.Label("Option 2: Describe Your Style", className="fw-bold mb-2"),
                                                 html.P("Describe the style you want (e.g., 'Modern minimalist').", className="text-muted small mb-2"),
                                                 dbc.Textarea(
                                                     id='pre-generation-infusion-prompt',
@@ -423,7 +423,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                                     style={'width': '100%', 'minHeight': '80px'},
                                                     className="mb-2"
                                                 ),
-                                                dbc.Button("✨ Generate Design from Prompt", id="pre-generation-design-from-prompt-btn", color="primary", size="sm"),
+                                                dbc.Button("Generate Design from Prompt", id="pre-generation-design-from-prompt-btn", color="primary", size="sm"),
                                                 dcc.Loading(
                                                     id="pre-generation-infusion-loading",
                                                     type="default",
@@ -456,7 +456,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                     
                     # Display available columns with types
                     html.Details([
-                        html.Summary("📋 Available Columns & Types", style={'cursor': 'pointer', 'fontWeight': 'bold'}),
+                        html.Summary("Available Columns & Types", style={'cursor': 'pointer', 'fontWeight': 'bold'}),
                         html.Div([
                             html.Div([
                                 dbc.Badge(f"{col['name']}: {col['type']}", color="light", text_color="dark", className="me-2 mb-2")
@@ -468,7 +468,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                     dbc.Row([
                         dbc.Col([
                             dbc.Button(
-                                "🚀 Generate Dashboard with AI",
+                                "Generate Dashboard",
                                 id="generate-ai-dashboard-btn",
                                 color="success",
                                 size="md"
@@ -476,7 +476,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                         ], width=8, className="text-center"),
                         dbc.Col([
                             dbc.Button(
-                                "⚙️ Manual Configuration",
+                                "Manual Configuration",
                                 id="manual-config-btn",
                                 color="secondary",
                                 size="md"
@@ -659,7 +659,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             progress_container = dbc.Card([
                 dbc.CardHeader([
                     dbc.Spinner(size="sm", color="primary", spinner_class_name="me-2"),
-                    html.Strong("⚙️ Generating Dashboard...", style={"fontSize": "15px"})
+                    html.Strong("Generating Dashboard...", style={"fontSize": "15px"})
                 ]),
                 dbc.CardBody(progress_elements, style={"maxHeight": "300px", "overflowY": "auto"})
             ], className="mb-2")
@@ -669,7 +669,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             if reasoning and (not current_reasoning or not isinstance(current_reasoning, dict)):
                 # First time or reasoning changed - create the card
                 reasoning_output = dbc.Card([
-                    dbc.CardHeader(html.Strong("🧠 AI Reasoning", style={"fontSize": "15px"})),
+                    dbc.CardHeader(html.Strong("AI Reasoning", style={"fontSize": "15px"})),
                     dbc.CardBody([
                         html.P(reasoning, style={"fontSize": "13px", "color": "#555", "margin": "0", "lineHeight": "1.6"})
                     ])
@@ -693,7 +693,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                 # Only update if we have new items
                 if len(widget_details) > current_count:
                     widgets_output = dbc.Card([
-                        dbc.CardHeader(html.Strong("🎯 Widget Selection Rationale", style={"fontSize": "15px"})),
+                        dbc.CardHeader(html.Strong("Widget Selection Rationale", style={"fontSize": "15px"})),
                         dbc.CardBody([
                             html.Ul([
                                 html.Li(detail, style={"fontSize": "13px", "lineHeight": "1.6"}) 
@@ -760,11 +760,11 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                 dbc.CardHeader([
                     dbc.Row([
                         dbc.Col([
-                            html.H4(f"✅ Dashboard Deployed: {dashboard_name}"),
+                            html.H4(f"Dashboard Deployed: {dashboard_name}"),
                             html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
                         ], width=8),
                         dbc.Col([
-                            dbc.Button("🗑️ Delete Dashboard", id="delete-dashboard-btn", color="danger", size="sm", className="float-end")
+                            dbc.Button("Delete Dashboard", id="delete-dashboard-btn", color="danger", size="sm", className="float-end")
                         ], width=4)
                     ], align="center")
                 ]),
