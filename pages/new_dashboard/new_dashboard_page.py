@@ -381,54 +381,55 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                         ], width=4)
                                     ]),
                                     dbc.Collapse([
-                                        # Option 1: Upload Image
-                                        html.Div([
-                                            html.Label("📷 Option 1: Upload an Image", className="fw-bold mb-2"),
-                                            html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-2"),
-                                            dcc.Upload(
-                                                id='infusion-image-upload',
-                                                children=html.Div([
-                                                    '📷 Drag and Drop or ',
-                                                    html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
-                                                ]),
-                                                style={
-                                                    'width': '100%',
-                                                    'height': '80px',
-                                                    'lineHeight': '80px',
-                                                    'borderWidth': '2px',
-                                                    'borderStyle': 'dashed',
-                                                    'borderRadius': '10px',
-                                                    'textAlign': 'center',
-                                                    'cursor': 'pointer',
-                                                    'backgroundColor': '#f8f9fa'
-                                                },
-                                                multiple=False
-                                            ),
-                                            dcc.Loading(
-                                                id="infusion-loading",
-                                                type="default",
-                                                children=html.Div(id='infusion-result', className="mt-2 mb-3")
-                                            )
-                                        ]),
-                                        
-                                        html.Hr(),
-                                        
-                                        # Option 2: Text Prompt
-                                        html.Div([
-                                            html.Label("✍️ Option 2: Describe Your Style", className="fw-bold mb-2"),
-                                            html.P("Describe the style you want (e.g., 'Van Gogh painting style', 'Modern minimalist').", className="text-muted small mb-2"),
-                                            dbc.Textarea(
-                                                id='pre-generation-infusion-prompt',
-                                                placeholder="Example: I would like the dashboard to have the a modern and impactful style...",
-                                                style={'width': '100%', 'minHeight': '100px'},
-                                                className="mb-2"
-                                            ),
-                                            dbc.Button("✨ Generate Design from Prompt", id="pre-generation-design-from-prompt-btn", color="primary", size="sm"),
-                                            dcc.Loading(
-                                                id="pre-generation-infusion-loading",
-                                                type="default",
-                                                children=html.Div(id='pre-generation-infusion-result', className="mt-2")
-                                            )
+                                        # Options Side by Side
+                                        dbc.Row([
+                                            # Option 1: Upload Image
+                                            dbc.Col([
+                                                html.Label("📷 Option 1: Upload an Image", className="fw-bold mb-2"),
+                                                html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-2"),
+                                                dcc.Upload(
+                                                    id='infusion-image-upload',
+                                                    children=html.Div([
+                                                        '📷 Drag and Drop or ',
+                                                        html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
+                                                    ]),
+                                                    style={
+                                                        'width': '100%',
+                                                        'height': '100px',
+                                                        'lineHeight': '100px',
+                                                        'borderWidth': '2px',
+                                                        'borderStyle': 'dashed',
+                                                        'borderRadius': '10px',
+                                                        'textAlign': 'center',
+                                                        'cursor': 'pointer',
+                                                        'backgroundColor': '#f8f9fa'
+                                                    },
+                                                    multiple=False
+                                                ),
+                                                dcc.Loading(
+                                                    id="infusion-loading",
+                                                    type="default",
+                                                    children=html.Div(id='infusion-result', className="mt-2")
+                                                )
+                                            ], width=6),
+                                            
+                                            # Option 2: Text Prompt
+                                            dbc.Col([
+                                                html.Label("✍️ Option 2: Describe Your Style", className="fw-bold mb-2"),
+                                                html.P("Describe the style you want (e.g., 'Modern minimalist').", className="text-muted small mb-2"),
+                                                dbc.Textarea(
+                                                    id='pre-generation-infusion-prompt',
+                                                    placeholder="Example: Modern and impactful style...",
+                                                    style={'width': '100%', 'minHeight': '80px'},
+                                                    className="mb-2"
+                                                ),
+                                                dbc.Button("✨ Generate Design from Prompt", id="pre-generation-design-from-prompt-btn", color="primary", size="sm"),
+                                                dcc.Loading(
+                                                    id="pre-generation-infusion-loading",
+                                                    type="default",
+                                                    children=html.Div(id='pre-generation-infusion-result', className="mt-2")
+                                                )
+                                            ], width=6)
                                         ])
                                     ], id="infusion-collapse", is_open=False, className="mt-3")
                                 ])

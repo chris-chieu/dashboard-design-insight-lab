@@ -76,7 +76,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<insert your token here>'
+DATABRICKS_TOKEN = '<databricks_token>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -255,52 +255,59 @@ app.layout = html.Div([
         ], width=10, style={'marginLeft': '240px', 'padding': '0'}),
     ], style={'margin': '0'}),
     
-    # Modal for applying infusion to existing dashboard (shared between tabs)
+    # Modal for applying infusion to new dashboard (after generation)
     dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("🎨 Apply Design Infusion")),
         dbc.ModalBody([
             html.P("Choose how you want to generate your design:", className="mb-3"),
             
-            # Option 1: Upload Image
-            dbc.Card([
-                dbc.CardBody([
-                    html.H6("📷 Option 1: Upload an Image", className="mb-3"),
-                    html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-3"),
-                    dcc.Upload(
-                        id='dashboard-infusion-upload',
-                        children=html.Div([
-                            '📷 Drag and Drop or ',
-                            html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
-                        ]),
-                        style={
-                            'width': '100%',
-                            'height': '80px',
-                            'lineHeight': '80px',
-                            'borderWidth': '2px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '10px',
-                            'textAlign': 'center',
-                            'cursor': 'pointer',
-                            'backgroundColor': '#f8f9fa'
-                        },
-                        multiple=False
-                    )
-                ])
-            ], className="mb-3"),
-            
-            # Option 2: Text Prompt
-            dbc.Card([
-                dbc.CardBody([
-                    html.H6("✍️ Option 2: Describe Your Design", className="mb-3"),
-                    html.P("Describe the style you want (e.g., 'Van Gogh painting style', 'Modern minimalist').", className="text-muted small mb-3"),
-                    dbc.Textarea(
-                        id='dashboard-infusion-prompt',
-                        placeholder="Example: I would like the dashboard to have the same style as Van Gogh's paintings...",
-                        style={'width': '100%', 'minHeight': '100px'},
-                        className="mb-2"
-                    ),
-                    dbc.Button("✨ Generate Design", id="generate-design-from-prompt-btn", color="primary", size="sm")
-                ])
+            # Options Side by Side
+            dbc.Row([
+                # Option 1: Upload Image
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.H6("📷 Option 1: Upload an Image", className="mb-3"),
+                            html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-3"),
+                            dcc.Upload(
+                                id='dashboard-infusion-upload',
+                                children=html.Div([
+                                    '📷 Drag and Drop or ',
+                                    html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
+                                ]),
+                                style={
+                                    'width': '100%',
+                                    'height': '100px',
+                                    'lineHeight': '100px',
+                                    'borderWidth': '2px',
+                                    'borderStyle': 'dashed',
+                                    'borderRadius': '10px',
+                                    'textAlign': 'center',
+                                    'cursor': 'pointer',
+                                    'backgroundColor': '#f8f9fa'
+                                },
+                                multiple=False
+                            )
+                        ])
+                    ], style={'height': '100%'})
+                ], width=6),
+                
+                # Option 2: Text Prompt
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.H6("✍️ Option 2: Describe Your Design", className="mb-3"),
+                            html.P("Describe the style you want (e.g., 'Modern minimalist').", className="text-muted small mb-3"),
+                            dbc.Textarea(
+                                id='dashboard-infusion-prompt',
+                                placeholder="Example: Modern and impactful style...",
+                                style={'width': '100%', 'minHeight': '80px'},
+                                className="mb-2"
+                            ),
+                            dbc.Button("✨ Generate Design", id="generate-design-from-prompt-btn", color="primary", size="sm")
+                        ])
+                    ], style={'height': '100%'})
+                ], width=6)
             ], className="mb-3"),
             
             dcc.Loading(
@@ -312,7 +319,7 @@ app.layout = html.Div([
         dbc.ModalFooter([
             dbc.Button("Close", id="close-infusion-modal", color="secondary", size="sm")
         ])
-    ], id="infusion-modal", size="lg", is_open=False),
+    ], id="infusion-modal", size="xl", is_open=False),
     
     # Separate Modal for Existing Dashboard Page (Enhanced with Intelligent Workflow)
     dbc.Modal([
@@ -320,46 +327,53 @@ app.layout = html.Div([
         dbc.ModalBody([
             html.P("Choose how you want to generate your design:", className="mb-3"),
             
-            # Option 1: Upload Image
-            dbc.Card([
-                dbc.CardBody([
-                    html.H6("📷 Option 1: Upload an Image", className="mb-3"),
-                    html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-3"),
-                    dcc.Upload(
-                        id='existing-dashboard-infusion-upload',
-                        children=html.Div([
-                            '📷 Drag and Drop or ',
-                            html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
-                        ]),
-                        style={
-                            'width': '100%',
-                            'height': '80px',
-                            'lineHeight': '80px',
-                            'borderWidth': '2px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '10px',
-                            'textAlign': 'center',
-                            'cursor': 'pointer',
-                            'backgroundColor': '#f8f9fa'
-                        },
-                        multiple=False
-                    )
-                ])
-            ], className="mb-3"),
-            
-            # Option 2: Text Prompt (with Intelligent Analysis)
-            dbc.Card([
-                dbc.CardBody([
-                    html.H6("✍️ Option 2: Describe Your Design (AI-Assisted)", className="mb-3"),
-                    html.P("Describe the style you want. AI will analyze your dashboard and explain design choices before applying.", className="text-muted small mb-3"),
-                    dbc.Textarea(
-                        id='existing-dashboard-infusion-prompt',
-                        placeholder="Example: Modern professional theme with blue accents, Corporate style, Dark elegant theme...",
-                        style={'width': '100%', 'minHeight': '100px'},
-                        className="mb-2"
-                    ),
-                    dbc.Button("🔍 Analyze & Generate Design", id="existing-generate-design-from-prompt-btn", color="primary", size="sm")
-                ])
+            # Options Side by Side
+            dbc.Row([
+                # Option 1: Upload Image
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.H6("📷 Option 1: Upload an Image", className="mb-3"),
+                            html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-3"),
+                            dcc.Upload(
+                                id='existing-dashboard-infusion-upload',
+                                children=html.Div([
+                                    '📷 Drag and Drop or ',
+                                    html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
+                                ]),
+                                style={
+                                    'width': '100%',
+                                    'height': '100px',
+                                    'lineHeight': '100px',
+                                    'borderWidth': '2px',
+                                    'borderStyle': 'dashed',
+                                    'borderRadius': '10px',
+                                    'textAlign': 'center',
+                                    'cursor': 'pointer',
+                                    'backgroundColor': '#f8f9fa'
+                                },
+                                multiple=False
+                            )
+                        ])
+                    ], style={'height': '100%'})
+                ], width=6),
+                
+                # Option 2: Text Prompt (with Intelligent Analysis)
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.H6("✍️ Option 2: Describe Your Design (AI-Assisted)", className="mb-3"),
+                            html.P("Describe the style you want. AI will analyze your dashboard and explain design choices before applying.", className="text-muted small mb-3"),
+                            dbc.Textarea(
+                                id='existing-dashboard-infusion-prompt',
+                                placeholder="Example: Modern professional theme with blue accents...",
+                                style={'width': '100%', 'minHeight': '80px'},
+                                className="mb-2"
+                            ),
+                            dbc.Button("🔍 Analyze & Generate Design", id="existing-generate-design-from-prompt-btn", color="primary", size="sm")
+                        ])
+                    ], style={'height': '100%'})
+                ], width=6)
             ], className="mb-3"),
             
             # Analysis & Reasoning Display Section (NEW)
