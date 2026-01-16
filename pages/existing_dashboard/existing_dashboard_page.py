@@ -61,6 +61,17 @@ def get_existing_dashboard_layout():
                                 html.H5("Dashboard Metrics Analysis", className="mb-0")
                             ]),
                             dbc.CardBody([
+                                # Search bar for filtering metrics
+                                dbc.Input(
+                                    id='metrics-search-input',
+                                    type='text',
+                                    placeholder='Search metrics by name...',
+                                    className='mb-3',
+                                    style={'fontSize': '0.875rem'}
+                                ),
+                                # Store for full unfiltered analysis
+                                dcc.Store(id='metrics-full-analysis', data=None),
+                                # Loading and content display
                                 dcc.Loading(
                                     id="metrics-discovery-loading",
                                     type="default",
@@ -76,7 +87,7 @@ def get_existing_dashboard_layout():
                                             ])
                                         ],
                                         style={
-                                            'maxHeight': '800px',
+                                            'maxHeight': '750px',
                                             'overflowY': 'auto',
                                             'minHeight': '400px'
                                         }

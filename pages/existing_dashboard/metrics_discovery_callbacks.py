@@ -266,13 +266,13 @@ For each widget above, provide a concise explanation using the **SQL expressions
         print(f"✅ Metrics analysis complete!")
         
         # Format the display component (no duplicate header, smaller font, smaller widget titles)
-        # Match dashboard height (800px) + card padding
+        # Height accounts for search bar above (750px)
         display_component = html.Div([
             dcc.Markdown(
                 analysis_text,
                 className="metrics-analysis-content",
                 style={
-                    'height': '800px',  # Match dashboard iframe height
+                    'height': '750px',  # Adjusted for search bar
                     'overflowY': 'auto',
                     'fontSize': '0.875rem',  # Smaller font (14px)
                     'lineHeight': '1.5',
@@ -305,7 +305,8 @@ def register_metrics_discovery_callbacks(app, llm_client):
     """
     
     @callback(
-        Output('metrics-discovery-content', 'children'),
+        [Output('metrics-discovery-content', 'children'),
+         Output('metrics-full-analysis', 'data')],
         Input('existing-metrics-discovery-btn', 'n_clicks'),
         State('existing-dashboard-config', 'data'),
         prevent_initial_call=True
@@ -314,20 +315,20 @@ def register_metrics_discovery_callbacks(app, llm_client):
         """Analyze dashboard metrics and update side panel"""
         
         if not n_clicks:
-            return no_update
+            return no_update, no_update
         
         # Check if dashboard is loaded
         if not dashboard_config:
-            return dbc.Alert("⚠️ No dashboard loaded", color="warning")
+            return dbc.Alert("⚠️ No dashboard loaded", color="warning"), None
         
         try:
             # Check if LLM client is available
             if not llm_client:
-                return dbc.Alert("⚠️ LLM client not available for metrics analysis", color="warning")
+                return dbc.Alert("⚠️ LLM client not available for metrics analysis", color="warning"), None
             
             # Analyze dashboard metrics
             display_component, analysis_text = analyze_dashboard_metrics(dashboard_config, llm_client)
-            return display_component
+            return display_component, analysis_text
             
         except Exception as e:
             import traceback
@@ -336,7 +337,86 @@ def register_metrics_discovery_callbacks(app, llm_client):
                 html.Strong("❌ Error analyzing metrics"),
                 html.Br(),
                 html.Small(f"Error: {str(e)}")
-            ], color="danger")
+            ], color="danger"), None
+    
+    
+    @callback(
+        Output('metrics-discovery-content', 'children', allow_duplicate=True),
+        Input('metrics-search-input', 'value'),
+        State('metrics-full-analysis', 'data'),
+        prevent_initial_call=True
+    )
+    def filter_metrics_by_search(search_term, full_analysis):
+        """Filter metrics display based on search term"""
+        
+        if not full_analysis:
+            return no_update
+        
+        # If no search term, show full analysis
+        if not search_term or not search_term.strip():
+            return html.Div([
+                dcc.Markdown(
+                    full_analysis,
+                    className="metrics-analysis-content",
+                    style={
+                        'height': '750px',
+                        'overflowY': 'auto',
+                        'fontSize': '0.875rem',
+                        'lineHeight': '1.5',
+                        'padding': '10px'
+                    }
+                )
+            ])
+        
+        # Filter the analysis by search term (case-insensitive)
+        search_term_lower = search_term.lower().strip()
+        
+        # Split analysis into sections (by "###" which is the widget title marker)
+        sections = full_analysis.split('###')
+        
+        # Keep intro text (before first ###)
+        filtered_sections = []
+        if sections[0].strip():
+            filtered_sections.append(sections[0])
+        
+        # Filter widget sections
+        matching_sections = []
+        for section in sections[1:]:  # Skip the intro
+            if not section.strip():
+                continue
+            # Extract the title (first line after ###)
+            lines = section.split('\n', 1)
+            title = lines[0] if lines else ''
+            
+            # Check if search term is in the title
+            if search_term_lower in title.lower():
+                matching_sections.append('###' + section)
+        
+        if not matching_sections:
+            return html.Div([
+                html.P(
+                    f"No metrics found matching '{search_term}'",
+                    className="text-muted text-center",
+                    style={'padding': '40px 20px'}
+                )
+            ])
+        
+        # Combine filtered sections
+        filtered_text = '\n\n'.join(matching_sections)
+        
+        return html.Div([
+            dcc.Markdown(
+                filtered_text,
+                className="metrics-analysis-content",
+                style={
+                    'height': '750px',
+                    'overflowY': 'auto',
+                    'fontSize': '0.875rem',
+                    'lineHeight': '1.5',
+                    'padding': '10px'
+                }
+            )
+        ])
     
     
     print("✅ Metrics discovery callbacks registered successfully")

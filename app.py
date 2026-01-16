@@ -79,7 +79,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<your-databricks-token>'
+DATABRICKS_TOKEN = '<insert your token here>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
