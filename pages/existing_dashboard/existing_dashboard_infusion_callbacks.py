@@ -119,7 +119,8 @@ def register_existing_dashboard_infusion_callbacks(app, dashboard_manager, works
                                 html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
                             ], width=7),
                             dbc.Col([
-                                dbc.Button("Apply Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
+                                dbc.Button("Metrics Discovery", id="existing-metrics-discovery-btn", color="info", size="sm", className="me-2"),
+                                dbc.Button("Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
                                 dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
                             ], width=5, className="text-end")
                         ], align="center")
@@ -298,7 +299,8 @@ def register_existing_dashboard_infusion_callbacks(app, dashboard_manager, works
                             html.Small(f"Dashboard ID: {updated_dashboard_id}", className="text-muted")
                         ], width=7),
                         dbc.Col([
-                            dbc.Button("Apply Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
+                            dbc.Button("Metrics Discovery", id="existing-metrics-discovery-btn", color="info", size="sm", className="me-2"),
+                            dbc.Button("Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
                             dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
                         ], width=5, className="text-end")
                     ], align="center")

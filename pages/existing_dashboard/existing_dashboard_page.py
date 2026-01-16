@@ -159,7 +159,10 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
          Output('existing-dashboard-id', 'data'),
          Output('existing-dashboard-config', 'data'),
          Output('existing-dashboard-name', 'data'),
-         Output('metrics-panel-container', 'style')],
+         Output('metrics-panel-container', 'style'),
+         Output('metrics-discovery-content', 'children', allow_duplicate=True),
+         Output('metrics-full-analysis', 'data', allow_duplicate=True),
+         Output('metrics-search-input', 'value')],
         Input('retrieve-dashboard-btn', 'n_clicks'),
         State('existing-dashboard-id-input', 'value'),
         prevent_initial_call=True,
@@ -176,13 +179,23 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
     )
     def retrieve_existing_dashboard(n_clicks, dashboard_id):
         """Retrieve and display an existing dashboard by ID"""
+        
+        # Placeholder for metrics panel (shown when no analysis is loaded)
+        metrics_placeholder = html.Div([
+            html.P(
+                "Click 'Metrics Discovery' button above to analyze dashboard widgets and understand how each metric is calculated.",
+                className="text-muted text-center",
+                style={'padding': '40px 20px'}
+            )
+        ])
+        
         if not n_clicks or not dashboard_id or not dashboard_id.strip():
             warning_msg = dbc.Row([
                 dbc.Col([
                     dbc.Alert("⚠️ Please enter a valid dashboard ID", color="warning")
                 ], width=6)
             ])
-            return warning_msg, "", None, None, None, {'display': 'none'}
+            return warning_msg, "", None, None, None, {'display': 'none'}, metrics_placeholder, None, ""
         
         try:
             dashboard_id = dashboard_id.strip()
@@ -322,7 +335,8 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
             ])
             
             # Store dashboard ID, config, and actual name in SEPARATE stores for existing dashboard page
-            return success_msg, preview_card, dashboard_id, dashboard_config, dashboard_name, {'display': 'block'}
+            # Reset metrics panel to placeholder and clear search
+            return success_msg, preview_card, dashboard_id, dashboard_config, dashboard_name, {'display': 'block'}, metrics_placeholder, None, ""
             
         except Exception as e:
             error_msg = dbc.Row([
@@ -336,7 +350,7 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
                     ], color="danger")
                 ], width=6)
             ])
-            return error_msg, "", None, None, None, {'display': 'none'}
+            return error_msg, "", None, None, None, {'display': 'none'}, metrics_placeholder, None, ""
     
     
     # ============================================================================
