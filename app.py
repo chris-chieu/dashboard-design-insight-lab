@@ -78,7 +78,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<YOUR_DATABRICKS_TOKEN>'
+DATABRICKS_TOKEN = '<Databricks Token>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -491,51 +491,14 @@ app.layout = html.Div([
 ])
 
 
-@callback(
-    [Output('dataset-json', 'children'),
-     Output('generate-btn', 'disabled'),
-     Output('original-dataset', 'data')],
-    Input('dataset-dropdown', 'value'),
-    prevent_initial_call=False
-)
-def show_dataset_json(value):
-    if not value:
-        return "", True, None
-    
-    dataset = datasets.get(value)
-    if not dataset:
-        return dbc.Alert("Dataset not found", color="warning"), True, None
-    
-    dataset_card = dbc.Card([
-        dbc.CardHeader(html.H5("📄 Dataset Configuration")),
-        dbc.CardBody([
-            dbc.Alert("✅ Dataset loaded successfully!", color="success", className="mb-3"),
-            html.Pre(
-                json.dumps(dataset, indent=2),
-                style={
-                    'backgroundColor': '#f8f9fa',
-                    'padding': '15px',
-                    'borderRadius': '5px',
-                    'overflow': 'auto',
-                    'maxHeight': '500px',
-                    'fontSize': '11px'
-                }
-            )
-        ])
-    ])
-    
-    # Store original dataset for filtering later
-    import copy
-    return dataset_card, False, copy.deepcopy(dataset)
-
-
-
-
 # ============================================================================
-# EXISTING DASHBOARD CALLBACKS (Moved to existing_dashboard_page.py)
+# ALL PAGE-SPECIFIC CALLBACKS HAVE BEEN MOVED TO THEIR RESPECTIVE MODULES
 # ============================================================================
-# The retrieve and delete callbacks for existing dashboards have been moved
-# to existing_dashboard_page.py and are registered via register_existing_dashboard_callbacks()
+
+# NOTE: Existing dashboard callbacks moved to:
+# pages/existing_dashboard/existing_dashboard_page.py
+#   - retrieve_existing_dashboard (retrieve and display)
+#   - delete_existing_dashboard (deletion)
 
 # NOTE: Existing dashboard infusion callbacks moved to:
 # pages/existing_dashboard/existing_dashboard_infusion_callbacks.py

@@ -193,11 +193,11 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
     import uuid
     import time
     from utils.query_permission_checker import test_dashboard_queries_for_permissions
+    from utils import list_tables_from_schema, get_table_columns
     from dash import callback, Output, Input, State, no_update, html
     import dash_bootstrap_components as dbc
     from widgets import extract_columns_with_llm
     from dashboard_management_functions import generate_dashboard_background
-    from table_inspector import list_tables_from_schema, get_table_columns
     
     UNITY_CATALOG = unity_catalog
     UNITY_SCHEMA = unity_schema
@@ -317,7 +317,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             return no_update, no_update, no_update, no_update
         
         try:
-            from table_inspector import create_dataset_from_table
+            from utils import create_dataset_from_table
             
             # Get columns with types
             columns_info, sql_query = get_table_columns(workspace_client, selected_table)
