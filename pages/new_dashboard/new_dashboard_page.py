@@ -821,3 +821,55 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
         else:
             return dbc.Alert(f"❌ {message}", color="danger", dismissable=True), None, "", "", "", ""
     
+    
+    # ============================================================================
+    # PRE-GENERATION DESIGN INFUSION CALLBACKS
+    # ============================================================================
+    
+    @callback(
+        Output("infusion-collapse", "is_open"),
+        Input("infusion-toggle-btn", "n_clicks"),
+        State("infusion-collapse", "is_open"),
+        prevent_initial_call=True
+    )
+    def toggle_infusion(n_clicks, is_open):
+        """Toggle the infusion upload section"""
+        if n_clicks:
+            return not is_open
+        return is_open
+    
+    
+    @callback(
+        [Output('infusion-result', 'children'),
+         Output('infusion-design-data', 'data')],
+        Input('infusion-image-upload', 'contents'),
+        State('infusion-image-upload', 'filename'),
+        prevent_initial_call=True
+    )
+    def process_infusion_upload(contents, filename):
+        """
+        Process uploaded image and extract design elements (pre-generation)
+        """
+        from dashboard_management_functions import extract_design_from_image
+        # Call the extract function from design_infusion module
+        return extract_design_from_image(contents, filename, llm_client)
+    
+    
+    @callback(
+        [Output('pre-generation-infusion-result', 'children'),
+         Output('infusion-design-data', 'data', allow_duplicate=True)],
+        Input('pre-generation-design-from-prompt-btn', 'n_clicks'),
+        State('pre-generation-infusion-prompt', 'value'),
+        prevent_initial_call=True
+    )
+    def process_pre_generation_infusion_prompt(n_clicks, prompt_text):
+        """
+        Process text prompt and generate design elements (pre-generation)
+        """
+        from dashboard_management_functions import generate_design_from_prompt
+        if not n_clicks or not prompt_text or not prompt_text.strip():
+            return no_update, no_update
+        
+        # Call the generate function from design_infusion module
+        return generate_design_from_prompt(prompt_text, llm_client)
+    

@@ -78,7 +78,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<databricks_token>'
+DATABRICKS_TOKEN = '<YOUR_DATABRICKS_TOKEN>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -537,87 +537,6 @@ def show_dataset_json(value):
 # The retrieve and delete callbacks for existing dashboards have been moved
 # to existing_dashboard_page.py and are registered via register_existing_dashboard_callbacks()
 
-# ============================================================================
-# DESIGN INFUSION CALLBACKS
-# ============================================================================
-
-@callback(
-    Output("infusion-collapse", "is_open"),
-    Input("infusion-toggle-btn", "n_clicks"),
-    State("infusion-collapse", "is_open"),
-    prevent_initial_call=True
-)
-def toggle_infusion(n_clicks, is_open):
-    """Toggle the infusion upload section"""
-    if n_clicks:
-        return not is_open
-    return is_open
-
-
-@callback(
-    [Output('infusion-result', 'children'),
-     Output('infusion-design-data', 'data')],
-    Input('infusion-image-upload', 'contents'),
-    State('infusion-image-upload', 'filename'),
-    prevent_initial_call=True
-)
-def process_infusion_upload(contents, filename):
-    """
-    Process uploaded image and extract design elements (pre-generation)
-    """
-    # Call the extract function from design_infusion module
-    return extract_design_from_image(contents, filename, llm_client)
-
-
-@callback(
-    [Output('pre-generation-infusion-result', 'children'),
-     Output('infusion-design-data', 'data', allow_duplicate=True)],
-    Input('pre-generation-design-from-prompt-btn', 'n_clicks'),
-    State('pre-generation-infusion-prompt', 'value'),
-    prevent_initial_call=True
-)
-def process_pre_generation_infusion_prompt(n_clicks, prompt_text):
-    """
-    Process text prompt and generate design elements (pre-generation)
-    """
-    if not n_clicks or not prompt_text or not prompt_text.strip():
-        return no_update, no_update
-    
-    # Call the generate function from design_infusion module
-    return generate_design_from_prompt(prompt_text, llm_client)
-
-
-@callback(
-    Output('infusion-modal', 'is_open', allow_duplicate=True),
-    Input('apply-infusion-btn', 'n_clicks'),
-    State('infusion-modal', 'is_open'),
-    prevent_initial_call=True
-)
-def open_infusion_modal(n_clicks, is_open):
-    """Open the infusion modal when Infusion button is clicked (New Dashboard page)"""
-    if n_clicks:
-        return True
-    return is_open
-
-
-
-@callback(
-    [Output('infusion-modal', 'is_open', allow_duplicate=True),
-     Output('dashboard-infusion-upload', 'contents', allow_duplicate=True),
-     Output('dashboard-infusion-prompt', 'value', allow_duplicate=True)],
-    Input('close-infusion-modal', 'n_clicks'),
-    State('infusion-modal', 'is_open'),
-    prevent_initial_call=True
-)
-def close_infusion_modal(n_clicks, is_open):
-    """Close the infusion modal and clear upload/prompt (New Dashboard page)"""
-    if n_clicks:
-        return False, None, ""  # Close modal and clear both upload and prompt
-    return is_open, no_update, no_update
-
-
-
-
 # NOTE: Existing dashboard infusion callbacks moved to:
 # pages/existing_dashboard/existing_dashboard_infusion_callbacks.py
 #   - generate_design_for_existing_dashboard (main generation callback)
@@ -633,6 +552,14 @@ def close_infusion_modal(n_clicks, is_open):
 #   - apply_validated_design_to_new_dashboard (validation callback)
 #   - toggle_new_dashboard_refinement (toggle refinement section)
 #   - apply_design_refinement_to_new_dashboard (refinement callback)
+#   - open_infusion_modal (modal control)
+#   - close_infusion_modal (modal control)
+
+# NOTE: New dashboard pre-generation infusion callbacks moved to:
+# pages/new_dashboard/new_dashboard_page.py
+#   - toggle_infusion (collapse toggle)
+#   - process_infusion_upload (image upload processing)
+#   - process_pre_generation_infusion_prompt (prompt processing)
 
 
 # ============================================================================

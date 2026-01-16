@@ -403,5 +403,37 @@ def register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_
             return error_msg, no_update, no_update, no_update, ""
     
     
-    print("✅ New dashboard infusion callbacks registered successfully")
+    # ============================================================================
+    # MODAL CONTROL CALLBACKS
+    # ============================================================================
+    
+    @callback(
+        Output('infusion-modal', 'is_open', allow_duplicate=True),
+        Input('apply-infusion-btn', 'n_clicks'),
+        State('infusion-modal', 'is_open'),
+        prevent_initial_call=True
+    )
+    def open_infusion_modal(n_clicks, is_open):
+        """Open the infusion modal when Infusion button is clicked (New Dashboard page)"""
+        if n_clicks:
+            return True
+        return is_open
+    
+    
+    @callback(
+        [Output('infusion-modal', 'is_open', allow_duplicate=True),
+         Output('dashboard-infusion-upload', 'contents', allow_duplicate=True),
+         Output('dashboard-infusion-prompt', 'value', allow_duplicate=True)],
+        Input('close-infusion-modal', 'n_clicks'),
+        State('infusion-modal', 'is_open'),
+        prevent_initial_call=True
+    )
+    def close_infusion_modal(n_clicks, is_open):
+        """Close the infusion modal and clear upload/prompt (New Dashboard page)"""
+        if n_clicks:
+            return False, None, ""  # Close modal and clear both upload and prompt
+        return is_open, no_update, no_update
+    
+    
+    print("✅ New dashboard infusion callbacks registered successfully (including modal controls)")
 
