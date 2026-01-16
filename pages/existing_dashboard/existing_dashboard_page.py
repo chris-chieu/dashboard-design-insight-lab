@@ -45,11 +45,48 @@ def get_existing_dashboard_layout():
             ], width=12)
         ]),
         
-        # Existing Dashboard Preview
-        dbc.Row([
-            dbc.Col([
-                html.Div(id='existing-dashboard-preview')
-            ], width=12)
+        # Dashboard and Metrics Discovery Side-by-Side
+        html.Div(id='dashboard-metrics-row', children=[
+            dbc.Row([
+                # Dashboard Display (Left) - will show the dashboard card with buttons
+                dbc.Col([
+                    html.Div(id='existing-dashboard-preview')
+                ], width=8),
+                
+                # Metrics Discovery Panel (Right) - initially hidden, shown when dashboard is loaded
+                dbc.Col([
+                    html.Div(id='metrics-panel-container', style={'display': 'none'}, children=[
+                        dbc.Card([
+                            dbc.CardHeader([
+                                html.H5("Dashboard Metrics Analysis", className="mb-0")
+                            ]),
+                            dbc.CardBody([
+                                dcc.Loading(
+                                    id="metrics-discovery-loading",
+                                    type="default",
+                                    children=html.Div(
+                                        id='metrics-discovery-content',
+                                        children=[
+                                            html.Div([
+                                                html.P(
+                                                    "Click 'Metrics Discovery' button above to analyze dashboard widgets and understand how each metric is calculated.",
+                                                    className="text-muted text-center",
+                                                    style={'padding': '40px 20px'}
+                                                )
+                                            ])
+                                        ],
+                                        style={
+                                            'maxHeight': '800px',
+                                            'overflowY': 'auto',
+                                            'minHeight': '400px'
+                                        }
+                                    )
+                                )
+                            ])
+                        ], style={'position': 'sticky', 'top': '20px'})
+                    ])
+                ], width=4, id='metrics-panel-column')
+            ], id='dashboard-and-metrics-row')
         ])
     ])
 
@@ -72,7 +109,8 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
     @app.callback(
         [Output('existing-dashboard-preview', 'children', allow_duplicate=True),
          Output('existing-dashboard-id', 'data', allow_duplicate=True),
-         Output('retrieve-dashboard-status', 'children', allow_duplicate=True)],
+         Output('retrieve-dashboard-status', 'children', allow_duplicate=True),
+         Output('metrics-panel-container', 'style', allow_duplicate=True)],
         Input('existing-delete-dashboard-btn', 'n_clicks'),
         State('existing-dashboard-id', 'data'),
         prevent_initial_call=True
@@ -85,7 +123,7 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
             raise PreventUpdate
         
         if not dashboard_id:
-            return no_update, None, dbc.Alert("No dashboard to delete", color="warning")
+            return no_update, None, dbc.Alert("No dashboard to delete", color="warning"), no_update
         
         # Delete dashboard from Databricks only (no Unity Catalog)
         success, message = dashboard_manager.delete_dashboard(
@@ -95,9 +133,9 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
         
         # Return appropriate message and clear the stored ID and preview
         if success:
-            return "", None, dbc.Alert(f"✅ {message}", color="success", dismissable=True)
+            return "", None, dbc.Alert(f"✅ {message}", color="success", dismissable=True), {'display': 'none'}
         else:
-            return no_update, dashboard_id, dbc.Alert(f"❌ {message}", color="danger", dismissable=True)
+            return no_update, dashboard_id, dbc.Alert(f"❌ {message}", color="danger", dismissable=True), no_update
     
     
     # ============================================================================
@@ -109,7 +147,8 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
          Output('existing-dashboard-preview', 'children'),
          Output('existing-dashboard-id', 'data'),
          Output('existing-dashboard-config', 'data'),
-         Output('existing-dashboard-name', 'data')],
+         Output('existing-dashboard-name', 'data'),
+         Output('metrics-panel-container', 'style')],
         Input('retrieve-dashboard-btn', 'n_clicks'),
         State('existing-dashboard-id-input', 'value'),
         prevent_initial_call=True,
@@ -132,7 +171,7 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
                     dbc.Alert("⚠️ Please enter a valid dashboard ID", color="warning")
                 ], width=6)
             ])
-            return warning_msg, "", None, None, None
+            return warning_msg, "", None, None, None, {'display': 'none'}
         
         try:
             dashboard_id = dashboard_id.strip()
@@ -241,6 +280,7 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
                             html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
                         ], width=7),
                         dbc.Col([
+                            dbc.Button("Metrics Discovery", id="existing-metrics-discovery-btn", color="info", size="sm", className="me-2"),
                             dbc.Button("Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
                             dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
                         ], width=5, className="text-end")
@@ -271,7 +311,7 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
             ])
             
             # Store dashboard ID, config, and actual name in SEPARATE stores for existing dashboard page
-            return success_msg, preview_card, dashboard_id, dashboard_config, dashboard_name
+            return success_msg, preview_card, dashboard_id, dashboard_config, dashboard_name, {'display': 'block'}
             
         except Exception as e:
             error_msg = dbc.Row([
@@ -285,7 +325,7 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
                     ], color="danger")
                 ], width=6)
             ])
-            return error_msg, "", None, None, None
+            return error_msg, "", None, None, None, {'display': 'none'}
     
     
     # ============================================================================

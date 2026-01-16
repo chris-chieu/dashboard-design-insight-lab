@@ -62,6 +62,7 @@ coverage.xml
 .project
 .pydevproject
 .settings/
+*.code-workspace
 
 # OS
 .DS_Store

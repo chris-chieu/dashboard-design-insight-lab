@@ -56,6 +56,7 @@ try:
         register_test_function_callbacks
     )
     from pages.existing_dashboard.existing_dashboard_infusion_callbacks import register_existing_dashboard_infusion_callbacks
+    from pages.existing_dashboard.metrics_discovery_callbacks import register_metrics_discovery_callbacks
     from pages.new_dashboard.new_dashboard_infusion_callbacks import register_new_dashboard_infusion_callbacks
     print("✅ Page layouts imported successfully")
     
@@ -78,7 +79,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<Databricks Token>'
+DATABRICKS_TOKEN = '<your-databricks-token>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -258,8 +259,13 @@ app.layout = html.Div([
                 ], style={'padding': '24px 0 16px 0'}),
                 html.Hr(style={'margin': '0 0 24px 0', 'borderColor': '#E0E5E8'}),
                 
-                # Dynamic content area
-                html.Div(id='page-content')
+                # Dynamic content area - Initial page loaded on startup
+                html.Div(
+                    id='page-content',
+                    children=[  # Initial content for first load
+                        get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA)
+                    ]
+                )
             ], fluid=True)
         ], width=10, style={'marginLeft': '240px', 'padding': '0'}),
     ], style={'margin': '0'}),
@@ -541,6 +547,10 @@ print("📋 Registering existing dashboard infusion callbacks...")
 register_existing_dashboard_infusion_callbacks(app, dashboard_manager, workspace_client, llm_client)
 print("✅ Existing dashboard infusion callbacks registered")
 
+print("📋 Registering metrics discovery callbacks...")
+register_metrics_discovery_callbacks(app, llm_client)
+print("✅ Metrics discovery callbacks registered")
+
 print("📋 Registering new dashboard infusion callbacks...")
 register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_client, llm_client)
 print("✅ New dashboard infusion callbacks registered")
@@ -574,45 +584,56 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
     """Handle sidebar navigation"""
     from dash import callback_context
     
-    # Default to new dashboard on initial load
-    if not callback_context.triggered:
-        return (
-            get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
-            'new-dashboard',
-            'w-100 text-start mb-2 nav-link-btn active',
-            'w-100 text-start mb-2 nav-link-btn',
-            'w-100 text-start mb-2 nav-link-btn'
-        )
-    
-    trigger_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-    
-    if trigger_id == 'nav-new-dashboard':
-        return (
-            get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
-            'new-dashboard',
-            'w-100 text-start mb-2 nav-link-btn active',
-            'w-100 text-start mb-2 nav-link-btn',
-            'w-100 text-start mb-2 nav-link-btn'
-        )
-    elif trigger_id == 'nav-existing-dashboard':
-        return (
-            get_existing_dashboard_layout(),
-            'existing-dashboard',
-            'w-100 text-start mb-2 nav-link-btn',
-            'w-100 text-start mb-2 nav-link-btn active',
-            'w-100 text-start mb-2 nav-link-btn'
-        )
-    elif trigger_id == 'nav-layout-analyzer':
-        return (
-            get_test_function_layout(),
-            'layout-analyzer',
-            'w-100 text-start mb-2 nav-link-btn',
-            'w-100 text-start mb-2 nav-link-btn',
-            'w-100 text-start mb-2 nav-link-btn active'
-        )
-    
-    # Fallback (shouldn't happen)
-    return no_update, no_update, no_update, no_update, no_update
+    try:
+        # Default to new dashboard on initial load
+        if not callback_context.triggered:
+            print("🔄 Navigation: Initial page load - showing New Dashboard")
+            return (
+                get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
+                'new-dashboard',
+                'w-100 text-start mb-2 nav-link-btn active',
+                'w-100 text-start mb-2 nav-link-btn',
+                'w-100 text-start mb-2 nav-link-btn'
+            )
+        
+        trigger_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+        print(f"🔄 Navigation: User clicked {trigger_id}")
+        
+        if trigger_id == 'nav-new-dashboard':
+            return (
+                get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
+                'new-dashboard',
+                'w-100 text-start mb-2 nav-link-btn active',
+                'w-100 text-start mb-2 nav-link-btn',
+                'w-100 text-start mb-2 nav-link-btn'
+            )
+        elif trigger_id == 'nav-existing-dashboard':
+            return (
+                get_existing_dashboard_layout(),
+                'existing-dashboard',
+                'w-100 text-start mb-2 nav-link-btn',
+                'w-100 text-start mb-2 nav-link-btn active',
+                'w-100 text-start mb-2 nav-link-btn'
+            )
+        elif trigger_id == 'nav-layout-analyzer':
+            return (
+                get_test_function_layout(),
+                'layout-analyzer',
+                'w-100 text-start mb-2 nav-link-btn',
+                'w-100 text-start mb-2 nav-link-btn',
+                'w-100 text-start mb-2 nav-link-btn active'
+            )
+        
+        # Fallback (shouldn't happen)
+        print("⚠️ Navigation: No matching trigger, using no_update")
+        return no_update, no_update, no_update, no_update, no_update
+        
+    except Exception as e:
+        print(f"❌ Navigation callback error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return no_update on error to prevent breaking the UI
+        return no_update, no_update, no_update, no_update, no_update
 
 print("✅ Sidebar navigation callback registered")
 

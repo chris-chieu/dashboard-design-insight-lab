@@ -468,3 +468,27 @@ details[open] summary {
     background: var(--db-text-muted);
 }
 
+/* Metrics Discovery Panel Styling */
+.metrics-analysis-content h3 {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+    color: var(--db-text-primary) !important;
+}
+
+.metrics-analysis-content p {
+    margin-bottom: 0.5rem !important;
+}
+
+.metrics-analysis-content strong {
+    color: var(--db-text-primary) !important;
+    font-weight: 600 !important;
+}
+
+.metrics-analysis-content hr {
+    margin: 1.5rem 0 !important;
+    border-color: var(--db-border) !important;
+    opacity: 1 !important;
+}
+
