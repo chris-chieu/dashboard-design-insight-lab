@@ -394,4 +394,39 @@ def register_existing_dashboard_infusion_callbacks(app, dashboard_manager, works
             traceback.print_exc()
             error_msg = dbc.Alert(f"❌ Refinement error: {str(e)}", color="danger")
             return error_msg, no_update, no_update, no_update, ""
+    
+    
+    # ============================================================================
+    # MODAL CONTROL CALLBACKS
+    # ============================================================================
+    
+    @callback(
+        Output('existing-infusion-modal', 'is_open', allow_duplicate=True),
+        Input('existing-apply-infusion-btn', 'n_clicks'),
+        State('existing-infusion-modal', 'is_open'),
+        prevent_initial_call=True
+    )
+    def open_existing_infusion_modal(n_clicks, is_open):
+        """Open the infusion modal when Infusion button is clicked (Existing Dashboard page)"""
+        if n_clicks:
+            return True
+        return is_open
+    
+    
+    @callback(
+        [Output('existing-infusion-modal', 'is_open', allow_duplicate=True),
+         Output('existing-dashboard-infusion-upload', 'contents', allow_duplicate=True),
+         Output('existing-dashboard-infusion-prompt', 'value', allow_duplicate=True)],
+        Input('close-existing-infusion-modal', 'n_clicks'),
+        State('existing-infusion-modal', 'is_open'),
+        prevent_initial_call=True
+    )
+    def close_existing_infusion_modal(n_clicks, is_open):
+        """Close the infusion modal and clear upload/prompt (Existing Dashboard page)"""
+        if n_clicks:
+            return False, None, ""  # Close modal and clear both upload and prompt
+        return is_open, no_update, no_update
+    
+    
+    print("✅ Existing dashboard infusion callbacks registered successfully (including modal controls)")
 

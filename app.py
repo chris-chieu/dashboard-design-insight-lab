@@ -78,7 +78,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<YOUR_DATABRICKS_TOKEN>'
+DATABRICKS_TOKEN = '<databricks_token>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -600,18 +600,6 @@ def open_infusion_modal(n_clicks, is_open):
     return is_open
 
 
-@callback(
-    Output('existing-infusion-modal', 'is_open', allow_duplicate=True),
-    Input('existing-apply-infusion-btn', 'n_clicks'),
-    State('existing-infusion-modal', 'is_open'),
-    prevent_initial_call=True
-)
-def open_existing_infusion_modal(n_clicks, is_open):
-    """Open the infusion modal when Infusion button is clicked (Existing Dashboard page)"""
-    if n_clicks:
-        return True
-    return is_open
-
 
 @callback(
     [Output('infusion-modal', 'is_open', allow_duplicate=True),
@@ -628,20 +616,6 @@ def close_infusion_modal(n_clicks, is_open):
     return is_open, no_update, no_update
 
 
-@callback(
-    [Output('existing-infusion-modal', 'is_open', allow_duplicate=True),
-     Output('existing-dashboard-infusion-upload', 'contents', allow_duplicate=True),
-     Output('existing-dashboard-infusion-prompt', 'value', allow_duplicate=True)],
-    Input('close-existing-infusion-modal', 'n_clicks'),
-    State('existing-infusion-modal', 'is_open'),
-    prevent_initial_call=True
-)
-def close_existing_infusion_modal(n_clicks, is_open):
-    """Close the infusion modal and clear upload/prompt (Existing Dashboard page)"""
-    if n_clicks:
-        return False, None, ""  # Close modal and clear both upload and prompt
-    return is_open, no_update, no_update
-
 
 
 # NOTE: Existing dashboard infusion callbacks moved to:
@@ -650,6 +624,8 @@ def close_existing_infusion_modal(n_clicks, is_open):
 #   - apply_validated_design_to_existing (validation callback)
 #   - toggle_existing_refinement (toggle refinement section)
 #   - apply_design_refinement_to_existing (refinement callback)
+#   - open_existing_infusion_modal (modal control)
+#   - close_existing_infusion_modal (modal control)
 
 # NOTE: New dashboard infusion callbacks moved to:
 # pages/new_dashboard/new_dashboard_infusion_callbacks.py
