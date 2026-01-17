@@ -57,6 +57,7 @@ try:
     )
     from pages.existing_dashboard.existing_dashboard_infusion_callbacks import register_existing_dashboard_infusion_callbacks
     from pages.existing_dashboard.metrics_discovery_callbacks import register_metrics_discovery_callbacks
+    from pages.existing_dashboard.genie_space_callbacks import register_genie_space_callbacks
     from pages.new_dashboard.new_dashboard_infusion_callbacks import register_new_dashboard_infusion_callbacks
     print("✅ Page layouts imported successfully")
     
@@ -79,7 +80,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<databricks_token>'
+DATABRICKS_TOKEN = '<insert your token here>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -281,7 +282,7 @@ app.layout = html.Div([
                   # Option 1: Upload Image
                   dbc.Col([
                       dbc.Card([
-                          dbc.CardBody([
+        dbc.CardBody([
                               html.H6("Option 1: Upload an Image", className="mb-3"),
                               html.P("Upload a picture and the AI will extract colors and fonts from it.", className="text-muted small mb-3"),
                               dcc.Upload(
@@ -290,8 +291,8 @@ app.layout = html.Div([
                                       'Drag and Drop or ',
                                       html.A('Select Image', style={'cursor': 'pointer', 'textDecoration': 'underline'})
                                   ]),
-                                  style={
-                                      'width': '100%',
+                style={
+                    'width': '100%',
                                       'height': '100px',
                                       'lineHeight': '100px',
                                       'borderWidth': '2px',
@@ -310,7 +311,7 @@ app.layout = html.Div([
                   # Option 2: Text Prompt (with Intelligent Analysis)
                   dbc.Col([
                       dbc.Card([
-                          dbc.CardBody([
+        dbc.CardBody([
                               html.H6("Option 2: Describe Your Design (AI-Assisted)", className="mb-3"),
                               html.P("Describe the style you want. AI will analyze your dashboard and explain design choices before applying.", className="text-muted small mb-3"),
                               dbc.Textarea(
@@ -351,7 +352,7 @@ app.layout = html.Div([
                       # Refinement Input (hidden by default)
                       dbc.Collapse(
                           dbc.Card([
-                              dbc.CardBody([
+        dbc.CardBody([
                                   html.H6("Provide Refinement Feedback:", className="mb-2"),
                                   html.P("Tell the AI what to improve (e.g., 'Make colors darker', 'Use more blue', 'Increase contrast')", 
                                          className="text-muted small mb-2"),
@@ -429,8 +430,8 @@ app.layout = html.Div([
                                 id='existing-dashboard-infusion-prompt',
                                 placeholder="Example: Modern professional theme with blue accents...",
                                 style={'width': '100%', 'minHeight': '80px'},
-                                className="mb-2"
-                            ),
+                        className="mb-2"
+                    ),
                             dbc.Button("Analyze & Generate Design", id="existing-generate-design-from-prompt-btn", color="primary", size="sm")
                         ])
                     ], style={'height': '100%'})
@@ -463,7 +464,7 @@ app.layout = html.Div([
                     # Refinement Input (hidden by default)
                     dbc.Collapse(
                         dbc.Card([
-                            dbc.CardBody([
+        dbc.CardBody([
                                 html.H6("Provide Refinement Feedback:", className="mb-2"),
                                 html.P("Tell the AI what to improve (e.g., 'Make colors darker', 'Use more blue', 'Increase contrast')", 
                                        className="text-muted small mb-2"),
@@ -550,6 +551,10 @@ print("✅ Existing dashboard infusion callbacks registered")
 print("📋 Registering metrics discovery callbacks...")
 register_metrics_discovery_callbacks(app, llm_client)
 print("✅ Metrics discovery callbacks registered")
+
+print("📋 Registering genie space callbacks...")
+register_genie_space_callbacks(app, dashboard_manager)
+print("✅ Genie space callbacks registered")
 
 print("📋 Registering new dashboard infusion callbacks...")
 register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_client, llm_client)

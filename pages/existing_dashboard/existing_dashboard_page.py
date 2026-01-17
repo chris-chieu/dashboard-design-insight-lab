@@ -7,6 +7,7 @@ This module contains all the UI components and callbacks for viewing and managin
 from dash import html, dcc, callback, Output, Input, State, no_update, MATCH
 import dash_bootstrap_components as dbc
 from utils.query_permission_checker import test_dashboard_queries_for_permissions
+from .genie_space_callbacks import create_dashboard_card_with_genie_toggle
 
 
 def get_existing_dashboard_layout():
@@ -28,16 +29,16 @@ def get_existing_dashboard_layout():
                     dbc.CardBody([
                         dbc.Row([
                             dbc.Col([
-                                html.Label("Enter Dashboard ID:", className="fw-bold mb-2"),
-                                html.P("You can find the dashboard ID in the URL or from the deployment confirmation.", className="text-muted small mb-3"),
-                                dbc.Input(
-                                    id='existing-dashboard-id-input',
-                                    placeholder="e.g., 01ef5f2a-e7cf-1c1f-9fc3-e06afd4e73f3",
-                                    type="text",
-                                    className="mb-3"
-                                ),
+                        html.Label("Enter Dashboard ID:", className="fw-bold mb-2"),
+                        html.P("You can find the dashboard ID in the URL or from the deployment confirmation.", className="text-muted small mb-3"),
+                        dbc.Input(
+                            id='existing-dashboard-id-input',
+                            placeholder="e.g., 01ef5f2a-e7cf-1c1f-9fc3-e06afd4e73f3",
+                            type="text",
+                            className="mb-3"
+                        ),
                                 dbc.Button("Retrieve Dashboard", id="retrieve-dashboard-btn", color="primary", className="mb-2"),
-                                html.Div(id='retrieve-dashboard-status', className="mt-3")
+                        html.Div(id='retrieve-dashboard-status', className="mt-3")
                             ], width=6)
                         ])
                     ])
@@ -47,10 +48,10 @@ def get_existing_dashboard_layout():
         
         # Dashboard and Metrics Discovery Side-by-Side
         html.Div(id='dashboard-metrics-row', children=[
-            dbc.Row([
+        dbc.Row([
                 # Dashboard Display (Left) - will show the dashboard card with buttons
-                dbc.Col([
-                    html.Div(id='existing-dashboard-preview')
+            dbc.Col([
+                html.Div(id='existing-dashboard-preview')
                 ], width=8),
                 
                 # Metrics Discovery Panel (Right) - initially hidden, shown when dashboard is loaded
@@ -295,42 +296,34 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
             #             ], className="mb-2")
             #         )
             
-            # Create preview card with infusion option and queries
-            preview_card = dbc.Card([
-                dbc.CardHeader([
-                    dbc.Row([
-                        dbc.Col([
-                            html.H4(f"{dashboard_name}"),
-                            html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
-                        ], width=7),
-                        dbc.Col([
-                            dbc.Button("Metrics Discovery", id="existing-metrics-discovery-btn", color="info", size="sm", className="me-2"),
-                            dbc.Button("Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
-                            dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
-                        ], width=5, className="text-end")
-                    ], align="center")
-                ]),
-                dbc.CardBody([
-                    html.Iframe(
-                        src=embed_url,
-                        style={
-                            'width': '100%',
-                            'height': '800px',
-                            'border': '1px solid #ddd',
-                            'borderRadius': '5px'
-                        }
-                    ),
-                    *queries_section
-                ])
-            ])
+            # Extract Genie Space setting (inside uiSettings)
+            serialized_dashboard = dashboard_config.get('serialized_dashboard', {})
+            if isinstance(serialized_dashboard, str):
+                import json
+                serialized_dashboard = json.loads(serialized_dashboard)
+            
+            # genieSpace is inside uiSettings, at the same level as theme
+            ui_settings = serialized_dashboard.get('uiSettings', {})
+            genie_space = ui_settings.get('genieSpace', {})
+            genie_enabled = genie_space.get('isEnabled', False)
+            
+            print(f"📊 Initial dashboard load - uiSettings.genieSpace: isEnabled={genie_enabled}, enablementMode={genie_space.get('enablementMode', 'N/A')}")
+            
+            # Create preview card with Genie Space toggle using helper function
+            preview_card = create_dashboard_card_with_genie_toggle(
+                dashboard_id=dashboard_id,
+                dashboard_name=dashboard_name,
+                embed_url=embed_url,
+                genie_enabled=genie_enabled
+            )
             
             success_msg = dbc.Row([
                 dbc.Col([
                     dbc.Alert([
-                        html.Strong("✅ Dashboard retrieved successfully!"),
-                        html.Br(),
-                        html.Small(f"Viewing: {dashboard_name}")
-                    ], color="success")
+                html.Strong("✅ Dashboard retrieved successfully!"),
+                html.Br(),
+                html.Small(f"Viewing: {dashboard_name}")
+            ], color="success")
                 ], width=6)
             ])
             
@@ -342,15 +335,16 @@ def register_existing_dashboard_callbacks(app, dashboard_manager, workspace_clie
             error_msg = dbc.Row([
                 dbc.Col([
                     dbc.Alert([
-                        html.Strong("❌ Error retrieving dashboard"),
-                        html.Br(),
-                        html.Small(f"Error: {str(e)}"),
-                        html.Br(),
-                        html.Small("Please verify the dashboard ID is correct and the dashboard exists.")
-                    ], color="danger")
+                html.Strong("❌ Error retrieving dashboard"),
+                html.Br(),
+                html.Small(f"Error: {str(e)}"),
+                html.Br(),
+                html.Small("Please verify the dashboard ID is correct and the dashboard exists.")
+            ], color="danger")
                 ], width=6)
             ])
             return error_msg, "", None, None, None, {'display': 'none'}, metrics_placeholder, None, ""
+    
     
     
     # ============================================================================

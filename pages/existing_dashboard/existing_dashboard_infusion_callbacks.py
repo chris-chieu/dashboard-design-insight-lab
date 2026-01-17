@@ -12,6 +12,7 @@ from dashboard_management_functions.design_infusion import (
     generate_design_with_analysis,
     refine_design_from_feedback
 )
+from .genie_space_callbacks import create_dashboard_card_with_genie_toggle
 
 
 def register_existing_dashboard_infusion_callbacks(app, dashboard_manager, workspace_client, llm_client):
@@ -109,34 +110,22 @@ def register_existing_dashboard_infusion_callbacks(app, dashboard_manager, works
                 cache_buster = f"?_refresh={int(time.time() * 1000)}"
                 new_embed_url_with_refresh = new_embed_url + cache_buster
                 
-                # Create updated preview card
+                # Create updated preview card with Genie Space toggle using helper
                 dashboard_name = dashboard_config.get('display_name', f'Dashboard {dashboard_id[:8]}')
-                preview_card = dbc.Card([
-                    dbc.CardHeader([
-                        dbc.Row([
-                            dbc.Col([
-                                html.H4(f"✅ Dashboard Updated: {dashboard_name}"),
-                                html.Small(f"Dashboard ID: {dashboard_id}", className="text-muted")
-                            ], width=7),
-                            dbc.Col([
-                                dbc.Button("Metrics Discovery", id="existing-metrics-discovery-btn", color="info", size="sm", className="me-2"),
-                                dbc.Button("Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
-                                dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
-                            ], width=5, className="text-end")
-                        ], align="center")
-                    ]),
-                    dbc.CardBody([
-                        html.Iframe(
-                            src=new_embed_url_with_refresh,
-                            style={
-                                'width': '100%',
-                                'height': '800px',
-                                'border': '1px solid #ddd',
-                                'borderRadius': '5px'
-                            }
-                        )
-                    ])
-                ])
+                
+                # Extract Genie Space setting (inside uiSettings)
+                ui_settings = updated_config.get('uiSettings', {})
+                genie_space = ui_settings.get('genieSpace', {})
+                genie_enabled = genie_space.get('isEnabled', False)
+                
+                print(f"📊 After image infusion - uiSettings.genieSpace: isEnabled={genie_enabled}, enablementMode={genie_space.get('enablementMode', 'N/A')}")
+                
+                preview_card = create_dashboard_card_with_genie_toggle(
+                    dashboard_id=dashboard_id,
+                    dashboard_name=f"✅ Dashboard Updated: {dashboard_name}",
+                    embed_url=new_embed_url_with_refresh,
+                    genie_enabled=genie_enabled
+                )
                 
                 # Update the stored config
                 full_updated_config = {
@@ -290,33 +279,20 @@ def register_existing_dashboard_infusion_callbacks(app, dashboard_manager, works
             cache_buster = f"?_refresh={int(time.time() * 1000)}"
             new_embed_url_with_refresh = new_embed_url + cache_buster
             
-            # Create preview
-            preview_card = dbc.Card([
-                dbc.CardHeader([
-                    dbc.Row([
-                        dbc.Col([
-                            html.H4(f"✅ Dashboard Updated: {dashboard_name}"),
-                            html.Small(f"Dashboard ID: {updated_dashboard_id}", className="text-muted")
-                        ], width=7),
-                        dbc.Col([
-                            dbc.Button("Metrics Discovery", id="existing-metrics-discovery-btn", color="info", size="sm", className="me-2"),
-                            dbc.Button("Infusion", id="existing-apply-infusion-btn", color="primary", size="sm", className="me-2"),
-                            dbc.Button("Delete Dashboard", id="existing-delete-dashboard-btn", color="danger", size="sm")
-                        ], width=5, className="text-end")
-                    ], align="center")
-                ]),
-                dbc.CardBody([
-                    html.Iframe(
-                        src=new_embed_url_with_refresh,
-                        style={
-                            'width': '100%',
-                            'height': '800px',
-                            'border': '1px solid #ddd',
-                            'borderRadius': '5px'
-                        }
-                    )
-                ])
-            ])
+            # Create preview with Genie Space toggle using helper
+            # Extract Genie Space setting (inside uiSettings)
+            ui_settings = updated_config.get('uiSettings', {})
+            genie_space = ui_settings.get('genieSpace', {})
+            genie_enabled = genie_space.get('isEnabled', False)
+            
+            print(f"📊 After validated infusion - uiSettings.genieSpace: isEnabled={genie_enabled}, enablementMode={genie_space.get('enablementMode', 'N/A')}")
+            
+            preview_card = create_dashboard_card_with_genie_toggle(
+                dashboard_id=updated_dashboard_id,
+                dashboard_name=f"✅ Dashboard Updated: {dashboard_name}",
+                embed_url=new_embed_url_with_refresh,
+                genie_enabled=genie_enabled
+            )
             
             # Store updated config
             full_updated_config = {

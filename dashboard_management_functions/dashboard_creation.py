@@ -68,6 +68,10 @@ class DashboardCreator:
         # First, get the dashboard to retrieve its etag (required for update)
         dashboard = self.client.lakeview.get(dashboard_id)
         
+        # Debug: Check if genieSpace is in the config
+        if 'genieSpace' in config:
+            print(f"🔍 Updating dashboard with genieSpace: {config['genieSpace']}")
+        
         # Update the dashboard using the SDK's update method with etag
         self.client.lakeview.update(
             dashboard_id=dashboard_id,

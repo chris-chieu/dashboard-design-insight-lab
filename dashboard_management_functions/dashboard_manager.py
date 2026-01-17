@@ -77,7 +77,22 @@ class DashboardManager:
         """
         try:
             dashboard = self.workspace_client.lakeview.get(dashboard_id)
-            return dashboard.as_dict()
+            dashboard_dict = dashboard.as_dict()
+            
+            # Debug: Check structure
+            print(f"🔍 Dashboard structure - Top-level keys: {list(dashboard_dict.keys())}")
+            if 'genieSpace' in dashboard_dict:
+                print(f"   genieSpace at TOP LEVEL: {dashboard_dict['genieSpace']}")
+            if 'serialized_dashboard' in dashboard_dict:
+                if isinstance(dashboard_dict['serialized_dashboard'], str):
+                    import json
+                    serialized = json.loads(dashboard_dict['serialized_dashboard'])
+                else:
+                    serialized = dashboard_dict['serialized_dashboard']
+                if 'genieSpace' in serialized:
+                    print(f"   genieSpace in SERIALIZED: {serialized['genieSpace']}")
+            
+            return dashboard_dict
         except Exception as e:
             print(f"Error retrieving dashboard config: {e}")
             return {}
