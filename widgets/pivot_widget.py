@@ -30,6 +30,9 @@ def create_pivot_widget(
     
     if widget_name is None:
         widget_name = f"pivot_{'_'.join(row_columns[:2])}".lower()
+        # Databricks enforces max 63 characters for widget names
+        if len(widget_name) > 63:
+            widget_name = widget_name[:63]
     
     # Generate user-friendly default title if not provided
     if not title:

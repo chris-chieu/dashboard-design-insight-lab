@@ -102,7 +102,7 @@ def generate_dashboard_background(
         # Step 1: Analyzing request
         ai_progress_store[session_id] = {
             'status': 'running',
-            'steps': ['🔍 Step 1: Analyzing your request with AI...'],
+            'steps': ['Step 1: Analyzing your request with AI...'],
             'reasoning': '',
             'widget_details': []
         }
@@ -135,13 +135,17 @@ Available columns with types: {columns_with_types_str}
 2. **DIMENSION COLUMNS** (for grouping): {', '.join(dimension_columns)}
    - Use these for: filtering, grouping (x_column, y_column, color_column in charts)
    - Use these for: COUNT aggregations only
+   - Use these for: table widgets (ONLY dimension columns, NEVER measure columns in tables!)
    
 3. **Examples for Metric View**:
    - Counter: {{"value_column": "total_revenue", "aggregation": "NONE", "label": "Total Revenue"}}
    - Bar Chart: {{"x_column": "total_revenue", "y_column": "region", "aggregation": "NONE", "title": "Revenue by Region"}}
    - Line Chart: {{"x_column": "date", "y_column": "total_revenue", "aggregation": "NONE", "time_granularity": "DAY", "title": "Revenue Trend"}}
+   - Table: {{"columns": ["region", "date", "customer_id"]}} ← ONLY dimension columns!
    
-DO NOT use SUM/AVG/MAX/MIN on measure columns - they are already aggregated!"""
+DO NOT use SUM/AVG/MAX/MIN on measure columns - they are already aggregated!
+DO NOT include measure columns in table widgets - they require aggregation context!
+"""
             else:
                 columns_info = f"""Available columns with types: {columns_with_types_str}
 
@@ -187,7 +191,7 @@ First, analyze the user's request and decide:
 
 Now, provide your response in JSON format with the following structure:
 {{
-    "reasoning": "Explain your strategic approach: (1) What the user needs, (2) Which widgets you selected and why (3) Your layout strategy for visual comfort and hierarchy, (4) How this design helps the user",
+    "reasoning": "Explain your strategic approach in numbered sections: (1) What the user needs (2) Which widgets you selected and why (3) Your layout strategy for visual comfort and hierarchy (4) How this design helps the user",
     "counters": [
         {{
             "value_column": "column_to_aggregate",
@@ -279,6 +283,7 @@ Filter:
 
 Table:
 - columns: Select the most relevant columns for the user's needs
+- ⚠️ For METRIC VIEWS: ONLY include DIMENSION columns (no measure columns in tables!)
 
 CRITICAL AGGREGATION RULES (applies to ALL widgets):
 ⚠️ NUMERICAL columns (revenue, amount, count, quantity, price, age, duration) can use: COUNT, SUM, AVG, MAX, MIN
@@ -411,7 +416,7 @@ EXAMPLES:
         })
         
         # Update progress: received AI response
-        ai_progress_store[session_id]['steps'].append('✅ Step 3: Received AI analysis')
+        ai_progress_store[session_id]['steps'].append('Step 3: Received AI analysis')
         ai_progress_store[session_id]['reasoning'] = reasoning
         time.sleep(0.4)
         
@@ -425,9 +430,9 @@ EXAMPLES:
         filter_config = ai_suggestion.get('filter')
         has_filter = False
         if filter_config and isinstance(filter_config, dict):
-            ai_progress_store[session_id]['steps'].append('🔍 Step 4: Creating filter widget...')
+            ai_progress_store[session_id]['steps'].append('Step 4: Creating filter widget...')
             if filter_config.get('reason'):
-                ai_progress_store[session_id]['widget_details'].append(f"🔍 Filter: {filter_config.get('reason')}")
+                ai_progress_store[session_id]['widget_details'].append(f"Filter: {filter_config.get('reason')}")
             time.sleep(0.3)
             
             filter_column = filter_config.get('column', all_columns[0])
@@ -440,14 +445,14 @@ EXAMPLES:
                 "position": {"x": 0, "y": 0, "width": 2, "height": 2}
             })
             has_filter = True
-            widget_list.append(f"🔍 Filter on {filter_column}")
-            ai_progress_store[session_id]['steps'].append(f'✅ Filter widget created for {filter_column}')
+            widget_list.append(f"Filter on {filter_column}")
+            ai_progress_store[session_id]['steps'].append(f'Filter widget created for {filter_column}')
         
         # Step 5: Create counter widgets if suggested
         counters_config = ai_suggestion.get('counters', [])
         counter_rows = 0
         if counters_config and isinstance(counters_config, list) and len(counters_config) > 0:
-            ai_progress_store[session_id]['steps'].append(f'📊 Step 5: Creating {len(counters_config)} counter widget(s)...')
+            ai_progress_store[session_id]['steps'].append(f'Step 5: Creating {len(counters_config)} counter widget(s)...')
             time.sleep(0.3)
             
             counter_width = 2  # Each counter takes 2 units of width
@@ -456,7 +461,7 @@ EXAMPLES:
             
             for idx, counter in enumerate(counters_config):
                 if counter.get('reason'):
-                    ai_progress_store[session_id]['widget_details'].append(f"📊 Counter: {counter.get('reason')}")
+                    ai_progress_store[session_id]['widget_details'].append(f"Counter: {counter.get('reason')}")
                 
                 counter_widget = create_counter_widget(
                     value_column=counter.get('value_column', all_columns[0]),
@@ -488,8 +493,8 @@ EXAMPLES:
                 })
                 
                 label = counter.get('label', f"{counter.get('aggregation')} of {counter.get('value_column')}")
-                widget_list.append(f"📊 Counter: {label}")
-                ai_progress_store[session_id]['steps'].append(f'✅ Counter created: {label}')
+                widget_list.append(f"Counter: {label}")
+                ai_progress_store[session_id]['steps'].append(f'Counter created: {label}')
             
             # Calculate how many rows of counters we have
             if num_counters == 3:
@@ -515,12 +520,20 @@ EXAMPLES:
         # Step 6: Prepare table widget if suggested (will be added at the bottom)
         table_config = ai_suggestion.get('table')
         if table_config and isinstance(table_config, dict):
-            ai_progress_store[session_id]['steps'].append('📋 Step 6: Preparing table widget...')
+            ai_progress_store[session_id]['steps'].append('Step 6: Preparing table widget...')
             if table_config.get('reason'):
-                ai_progress_store[session_id]['widget_details'].append(f"📋 Table: {table_config.get('reason')}")
+                ai_progress_store[session_id]['widget_details'].append(f"Table: {table_config.get('reason')}")
             time.sleep(0.3)
             
             table_columns = table_config.get('columns', all_columns[:5])
+            
+            # For metric views, filter out measure columns (they don't work in tables)
+            if is_metric_view and columns_types:
+                dimension_columns = [col['name'] for col in columns_types if not col.get('is_measure', False)]
+                # Only keep requested columns that are dimensions
+                table_columns = [col for col in table_columns if col in dimension_columns]
+                print(f"📊 Metric view table: filtered to {len(table_columns)} dimension columns (from {len(table_config.get('columns', all_columns[:5]))} requested)")
+            
             table_widget = create_table_widget(
                 title="Data Overview",
                 visible_columns=table_columns,
@@ -532,8 +545,8 @@ EXAMPLES:
                 "widget": table_widget,
                 "columns_count": len(table_columns)
             }
-            widget_list.append(f"📋 Table with {len(table_columns)} columns")
-            ai_progress_store[session_id]['steps'].append(f'✅ Table widget prepared with {len(table_columns)} columns')
+            widget_list.append(f"Table with {len(table_columns)} columns")
+            ai_progress_store[session_id]['steps'].append(f'Table widget prepared with {len(table_columns)} columns')
         
         # Collect all chart/pivot widgets first to determine layout strategy
         chart_widgets = []  # Will store (widget, type, description)
@@ -541,9 +554,9 @@ EXAMPLES:
         # Step 8: Create bar chart widget if suggested
         bar_config = ai_suggestion.get('bar_chart')
         if bar_config and isinstance(bar_config, dict):
-            ai_progress_store[session_id]['steps'].append('📊 Step 7: Creating bar chart widget...')
+            ai_progress_store[session_id]['steps'].append('Step 7: Creating bar chart widget...')
             if bar_config.get('reason'):
-                ai_progress_store[session_id]['widget_details'].append(f"📊 Bar Chart: {bar_config.get('reason')}")
+                ai_progress_store[session_id]['widget_details'].append(f"Bar Chart: {bar_config.get('reason')}")
             time.sleep(0.3)
             
             # Handle color_column - ensure it's None if null or invalid
@@ -559,17 +572,17 @@ EXAMPLES:
                 dataset_name=dataset['name'],
                 title=bar_config.get('title', None)
             )
-            description = f"📊 Bar chart: {bar_config.get('aggregation', 'COUNT')} of {bar_config.get('x_column', 'N/A')} by {bar_config.get('y_column', 'N/A')}"
+            description = f"Bar chart: {bar_config.get('aggregation', 'COUNT')} of {bar_config.get('x_column', 'N/A')} by {bar_config.get('y_column', 'N/A')}"
             chart_widgets.append((bar_chart_widget, 'bar', description))
             widget_list.append(description)
-            ai_progress_store[session_id]['steps'].append(f"✅ Bar chart created: {bar_config.get('aggregation', 'COUNT')} by {bar_config.get('y_column', 'N/A')}")
+            ai_progress_store[session_id]['steps'].append(f"Bar chart created: {bar_config.get('aggregation', 'COUNT')} by {bar_config.get('y_column', 'N/A')}")
         
         # Step 9: Create line chart widget if suggested
         line_config = ai_suggestion.get('line_chart')
         if line_config and isinstance(line_config, dict):
-            ai_progress_store[session_id]['steps'].append('📈 Step 8: Creating line chart widget...')
+            ai_progress_store[session_id]['steps'].append('Step 8: Creating line chart widget...')
             if line_config.get('reason'):
-                ai_progress_store[session_id]['widget_details'].append(f"📈 Line Chart: {line_config.get('reason')}")
+                ai_progress_store[session_id]['widget_details'].append(f"Line Chart: {line_config.get('reason')}")
             time.sleep(0.3)
             
             # Handle color_column - ensure it's None if null or invalid
@@ -586,17 +599,17 @@ EXAMPLES:
                 dataset_name=dataset['name'],
                 title=line_config.get('title', None)
             )
-            description = f"📈 Line chart: {line_config.get('aggregation', 'COUNT')} of {line_config.get('y_column', 'N/A')} over {line_config.get('x_column', 'N/A')}"
+            description = f"Line chart: {line_config.get('aggregation', 'COUNT')} of {line_config.get('y_column', 'N/A')} over {line_config.get('x_column', 'N/A')}"
             chart_widgets.append((line_chart_widget, 'line', description))
             widget_list.append(description)
-            ai_progress_store[session_id]['steps'].append(f"✅ Line chart created: {line_config.get('aggregation', 'COUNT')} over time")
+            ai_progress_store[session_id]['steps'].append(f"Line chart created: {line_config.get('aggregation', 'COUNT')} over time")
         
         # Step 10: Create pie chart widget if suggested
         pie_config = ai_suggestion.get('pie_chart')
         if pie_config and isinstance(pie_config, dict):
-            ai_progress_store[session_id]['steps'].append('🥧 Step 9: Creating pie chart widget...')
+            ai_progress_store[session_id]['steps'].append('Step 9: Creating pie chart widget...')
             if pie_config.get('reason'):
-                ai_progress_store[session_id]['widget_details'].append(f"🥧 Pie Chart: {pie_config.get('reason')}")
+                ai_progress_store[session_id]['widget_details'].append(f"Pie Chart: {pie_config.get('reason')}")
             time.sleep(0.3)
             
             pie_chart_widget = create_pie_chart_widget(
@@ -606,17 +619,17 @@ EXAMPLES:
                 dataset_name=dataset['name'],
                 title=pie_config.get('title', None)
             )
-            description = f"🥧 Pie chart: {pie_config.get('aggregation', 'COUNT')} of {pie_config.get('value_column', 'N/A')} by {pie_config.get('category_column', 'N/A')}"
+            description = f"Pie chart: {pie_config.get('aggregation', 'COUNT')} of {pie_config.get('value_column', 'N/A')} by {pie_config.get('category_column', 'N/A')}"
             chart_widgets.append((pie_chart_widget, 'pie', description))
             widget_list.append(description)
-            ai_progress_store[session_id]['steps'].append(f"✅ Pie chart created: {pie_config.get('title', 'distribution')}")
+            ai_progress_store[session_id]['steps'].append(f"Pie chart created: {pie_config.get('title', 'distribution')}")
         
         # Step 11: Create pivot widget if suggested
         pivot_config = ai_suggestion.get('pivot')
         if pivot_config and isinstance(pivot_config, dict):
-            ai_progress_store[session_id]['steps'].append('🔢 Step 10: Creating pivot table widget...')
+            ai_progress_store[session_id]['steps'].append('Step 10: Creating pivot table widget...')
             if pivot_config.get('reason'):
-                ai_progress_store[session_id]['widget_details'].append(f"🔢 Pivot: {pivot_config.get('reason')}")
+                ai_progress_store[session_id]['widget_details'].append(f"Pivot: {pivot_config.get('reason')}")
             time.sleep(0.3)
             
             pivot_widget = create_pivot_widget(
@@ -627,16 +640,16 @@ EXAMPLES:
                 title=pivot_config.get('title', None)
             )
             row_cols = ', '.join(pivot_config.get('row_columns', []))
-            description = f"🔢 Pivot: {pivot_config.get('aggregation', 'SUM')} of {pivot_config.get('value_column', 'N/A')} by {row_cols}"
+            description = f"Pivot: {pivot_config.get('aggregation', 'SUM')} of {pivot_config.get('value_column', 'N/A')} by {row_cols}"
             chart_widgets.append((pivot_widget, 'pivot', description))
             widget_list.append(description)
-            ai_progress_store[session_id]['steps'].append(f"✅ Pivot created: {pivot_config.get('aggregation', 'SUM')} by {row_cols}")
+            ai_progress_store[session_id]['steps'].append(f"Pivot created: {pivot_config.get('aggregation', 'SUM')} by {row_cols}")
         
         # Position all charts using smart layout
         num_charts = len(chart_widgets)
         if num_charts == 3:
             # Hero layout for 3 charts: First chart full width, others split below
-            ai_progress_store[session_id]['steps'].append(f'🎨 Using hero layout for 3 charts...')
+            ai_progress_store[session_id]['steps'].append(f'Using hero layout for 3 charts...')
             
             # First chart: Full width (x=0, width=6)
             layout.append({
@@ -662,7 +675,7 @@ EXAMPLES:
             current_y += 6
         elif num_charts == 4:
             # 4 charts: 2 rows of 2, with spacer between rows
-            ai_progress_store[session_id]['steps'].append(f'📊 Using 2x2 grid layout with spacer for 4 charts...')
+            ai_progress_store[session_id]['steps'].append(f'Using 2x2 grid layout with spacer for 4 charts...')
             
             # First row: 2 charts
             for idx in range(2):
@@ -690,7 +703,7 @@ EXAMPLES:
             current_y += 6
         elif num_charts > 4:
             # 5+ charts: Standard grid (2 per row) with spacers between rows
-            ai_progress_store[session_id]['steps'].append(f'📊 Using grid layout for {num_charts} charts...')
+            ai_progress_store[session_id]['steps'].append(f'Using grid layout for {num_charts} charts...')
             for idx, (chart_widget, chart_type, desc) in enumerate(chart_widgets):
                 x_pos = (idx % 2) * 3  # Alternates x=0, x=3
                 y_pos = current_y
@@ -710,7 +723,7 @@ EXAMPLES:
                         current_y += 1
         elif num_charts > 0:
             # 1-2 charts: side by side (no spacer needed between them)
-            ai_progress_store[session_id]['steps'].append(f'📊 Using side-by-side layout for {num_charts} chart(s)...')
+            ai_progress_store[session_id]['steps'].append(f'Using side-by-side layout for {num_charts} chart(s)...')
             for idx, (chart_widget, chart_type, desc) in enumerate(chart_widgets):
                 x_pos = (idx % 2) * 3  # Alternates x=0, x=3
                 layout.append({
@@ -721,7 +734,7 @@ EXAMPLES:
         
         # Step 11: Add table widget at the bottom if it was prepared
         if table_widget_data:
-            ai_progress_store[session_id]['steps'].append('📋 Step 11: Adding table widget at bottom...')
+            ai_progress_store[session_id]['steps'].append('Step 11: Adding table widget at bottom...')
             
             # Add spacer before table (if there are charts above)
             if num_charts > 0:
@@ -736,7 +749,7 @@ EXAMPLES:
                 "position": {"x": 0, "y": current_y, "width": 6, "height": 8}
             })
             current_y += 8  # Update y position after table
-            ai_progress_store[session_id]['steps'].append(f'✅ Table widget added at bottom with {table_widget_data["columns_count"]} columns')
+            ai_progress_store[session_id]['steps'].append(f'Table widget added at bottom with {table_widget_data["columns_count"]} columns')
             time.sleep(0.3)
         
         # Check if at least one widget was created
@@ -771,7 +784,7 @@ EXAMPLES:
         # Add uiSettings from design infusion if available
         if infusion_data and isinstance(infusion_data, dict) and 'uiSettings' in infusion_data:
             dashboard_config['uiSettings'] = infusion_data['uiSettings']
-            ai_progress_store[session_id]['steps'].append('🎨 Applied design infusion theme')
+            ai_progress_store[session_id]['steps'].append('Applied design infusion theme')
             time.sleep(0.2)
         
         # Step 13: Generate random dashboard name or use AI suggestion
@@ -787,16 +800,31 @@ EXAMPLES:
         ai_progress_store[session_id]['steps'].append('🚀 Step 13: Deploying dashboard to Databricks...')
         time.sleep(0.3)
         
+        print(f"⏳ Creating dashboard '{dashboard_name}'...")
+        start_time = time.time()
         dashboard_id = dashboard_manager.create_dashboard(dashboard_config, dashboard_name)
+        elapsed = time.time() - start_time
+        print(f"✅ Dashboard created in {elapsed:.2f}s (ID: {dashboard_id})")
+        
+        ai_progress_store[session_id]['steps'].append(f'Step 13.1: Dashboard created (ID: {dashboard_id})')
+        time.sleep(0.2)
+        
+        print(f"⏳ Generating embed URL...")
+        ai_progress_store[session_id]['steps'].append('Step 13.2: Generating embed URL...')
+        start_time = time.time()
         embed_url = dashboard_manager.get_embed_url(dashboard_id)
+        elapsed = time.time() - start_time
+        print(f"✅ Embed URL generated in {elapsed:.2f}s")
         
         # Construct the actual dashboard URL (not embed URL)
         workspace_url = dashboard_manager.workspace_client.config.host
         dashboard_url = f"{workspace_url}/dashboardsv3/{dashboard_id}"
         
-        ai_progress_store[session_id]['steps'].append('✅ Step 14: Dashboard deployed successfully!')
+        ai_progress_store[session_id]['steps'].append('Step 13.3: Creating preview card...')
+        print(f"⏳ Creating preview card...")
         
         # Create preview
+        print(f"⏳ Creating preview card with embed URL: {embed_url[:100]}...")
         preview_card = dbc.Card([
             dbc.CardHeader([
                 dbc.Row([
@@ -828,6 +856,7 @@ EXAMPLES:
                 )
             ])
         ])
+        print(f"✅ Preview card created successfully")
         
         # Build success message
         status_items = [
@@ -848,6 +877,7 @@ EXAMPLES:
         
         # Store results FIRST (before marking as complete to avoid race condition)
         # Wrap dashboard_config in the format expected by infusion callbacks
+        print(f"⏳ Storing results for session {session_id}...")
         ai_results_store[session_id] = {
             'status': success_alert,
             'progress': "",
@@ -859,9 +889,13 @@ EXAMPLES:
             },
             'dashboard_name': dashboard_name
         }
+        print(f"✅ Results stored successfully")
         
         # THEN mark as complete (polling callback will now find all data ready)
+        print(f"⏳ Marking session {session_id} as completed...")
         ai_progress_store[session_id]['status'] = 'completed'
+        ai_progress_store[session_id]['steps'].append('Step 14: Dashboard deployed successfully!')
+        print(f"✅ Session marked as completed. Dashboard URL: {dashboard_url}")
         
         # Log final results to MLflow trace
         mlflow.set_tags({

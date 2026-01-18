@@ -568,24 +568,15 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                         ])
                     ], className="mb-3"),
                     
-                    dbc.Row([
-                        dbc.Col([
-                            dbc.Button(
-                                "Generate Dashboard",
-                                id="generate-ai-dashboard-btn",
-                                color="success",
-                                size="md"
-                            )
-                        ], width=8, className="text-center"),
-                        dbc.Col([
-                            dbc.Button(
-                                "Manual Configuration",
-                                id="manual-config-btn",
-                                color="secondary",
-                                size="md"
-                            )
-                        ], width=4, className="text-center")
-                    ])
+                    html.Div([
+                        dbc.Button(
+                            "Generate Dashboard",
+                            id="generate-ai-dashboard-btn",
+                            color="success",
+                            size="md",
+                            className="mt-3"
+                        )
+                    ], className="text-center")
                     # Note: ai-generation-status, progress, reasoning, widgets are now in the initial layout
                 ])
             ], className="mb-4")
@@ -715,22 +706,28 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
     def poll_ai_generation_progress(n_intervals, session_id, last_update, current_reasoning, current_widgets, active_page):
         """Poll for AI generation progress and update UI"""
         try:
+            print(f"🔄 Poll callback fired (interval #{n_intervals}), session: {session_id}, active_page: {active_page}")
+            
             # If we're not on the new dashboard page, don't update anything
             if active_page != 'new-dashboard':
+                print(f"   ⏭️ Skipping poll - not on new dashboard page")
                 return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
             
             # Check for timeout (max_intervals reached)
             if n_intervals and n_intervals >= 300:
+                print(f"   ⏰ Timeout reached")
                 error = dbc.Alert("⚠️ Dashboard generation timed out after 2.5 minutes", color="warning")
                 return error, "", no_update, no_update, "", None, True, None, None, None
             
             # Validate session
             if not session_id:
+                print(f"   ⚠️ No session ID")
                 return "", "", no_update, no_update, no_update, no_update, True, None, None, None
             
             # Check if session exists (might not be initialized yet)
             if session_id not in ai_progress_store:
-                # Session not ready yet, keep polling
+                # Session not ready yet OR already completed and cleaned up
+                print(f"   ⏭️ Session not in progress store - returning no_update (session might be completed)")
                 return no_update, no_update, no_update, no_update, no_update, no_update, False, last_update, no_update, no_update
             
             progress_data = ai_progress_store.get(session_id, {})
@@ -773,10 +770,44 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             # Handle reasoning display (only update if new reasoning available)
             reasoning_output = no_update
             if reasoning and (not current_reasoning or not isinstance(current_reasoning, dict)):
-                # First time or reasoning changed - create the card
+                # Parse reasoning into sections for better readability
+                # Look for numbered patterns like (1), (2), (3), (4) or sentences
+                import re
+                
+                # Try to split by numbered sections
+                sections = re.split(r'\(\d+\)', reasoning)
+                
+                if len(sections) > 1:
+                    # Found numbered sections - format each as a bullet point
+                    reasoning_elements = []
+                    for i, section in enumerate(sections[1:], 1):  # Skip first empty element
+                        section_text = section.strip()
+                        if section_text:
+                            reasoning_elements.append(
+                                html.Div([
+                                    html.Strong(f"• ", style={"color": "#2272B4"}),
+                                    html.Span(section_text)
+                                ], style={"fontSize": "13px", "color": "#555", "marginBottom": "12px", "lineHeight": "1.6"})
+                            )
+                else:
+                    # No numbered sections - split by sentences and format as bullet points
+                    sentences = reasoning.split('. ')
+                    reasoning_elements = []
+                    for sentence in sentences:
+                        sentence_text = sentence.strip()
+                        if sentence_text:
+                            if not sentence_text.endswith('.'):
+                                sentence_text += '.'
+                            reasoning_elements.append(
+                                html.Div([
+                                    html.Strong(f"• ", style={"color": "#2272B4"}),
+                                    html.Span(sentence_text)
+                                ], style={"fontSize": "13px", "color": "#555", "marginBottom": "12px", "lineHeight": "1.6"})
+                            )
+                
                 reasoning_output = dbc.Card([
                     dbc.CardHeader(html.Strong("AI Reasoning", style={"fontSize": "15px"})),
-                    dbc.CardBody([
+                    dbc.CardBody(reasoning_elements if reasoning_elements else [
                         html.P(reasoning, style={"fontSize": "13px", "color": "#555", "margin": "0", "lineHeight": "1.6"})
                     ])
                 ], className="mb-2", style={"marginTop": "10px"})
@@ -812,12 +843,72 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
             if status_value == 'completed':
                 # Get results and disable polling
                 results = ai_results_store.get(session_id, {})
-                # Clean up stores
-                if session_id in ai_progress_store:
-                    del ai_progress_store[session_id]
-                if session_id in ai_results_store:
-                    del ai_results_store[session_id]
-                return results.get('status', ""), "", no_update, no_update, results.get('preview', ""), results.get('dashboard_id'), True, None, results.get('dashboard_config'), results.get('dashboard_name')
+                
+                # Verify results are valid
+                if not results or not results.get('preview'):
+                    print(f"⚠️ Warning: Completed but results incomplete. Session: {session_id}, Results: {results.keys() if results else 'None'}")
+                    # Don't delete stores yet - keep polling to allow more time
+                    return no_update, no_update, no_update, no_update, no_update, no_update, False, last_update, no_update, no_update
+                
+                print(f"✅ Dashboard generation completed successfully. Session: {session_id}, Dashboard ID: {results.get('dashboard_id')}")
+                
+                try:
+                    # Verify all required fields before returning
+                    preview = results.get('preview')
+                    dashboard_id = results.get('dashboard_id')
+                    dashboard_config = results.get('dashboard_config')
+                    dashboard_name = results.get('dashboard_name')
+                    
+                    print(f"📊 Results check - Preview: {'✅' if preview else '❌'}, Dashboard ID: {dashboard_id}, Config: {'✅' if dashboard_config else '❌'}, Name: {dashboard_name}")
+                    
+                    # DON'T clean up stores immediately - keep them for a few more polls
+                    # Mark a "cleanup time" to delete later (prevents race condition)
+                    import time as time_module
+                    if 'cleanup_time' not in ai_progress_store[session_id]:
+                        ai_progress_store[session_id]['cleanup_time'] = time_module.time() + 2  # Keep for 2 more seconds
+                        print(f"⏰ Scheduled cleanup for session {session_id} in 2 seconds")
+                    
+                    # Only clean up if enough time has passed
+                    cleanup_time = ai_progress_store[session_id].get('cleanup_time', 0)
+                    if time_module.time() >= cleanup_time:
+                        print(f"🧹 Cleanup time reached, deleting stores for session {session_id}")
+                        if session_id in ai_progress_store:
+                            del ai_progress_store[session_id]
+                        if session_id in ai_results_store:
+                            del ai_results_store[session_id]
+                    else:
+                        print(f"⏳ Cleanup delayed, keeping stores for {cleanup_time - time_module.time():.1f}s more")
+                    
+                    print(f"🔄 Returning results to UI - Preview type: {type(preview).__name__}, Dashboard ID: {dashboard_id}")
+                    
+                    return_values = (
+                        results.get('status', ""),  # ai-generation-status
+                        "",  # ai-generation-progress
+                        no_update,  # ai-generation-reasoning
+                        no_update,  # ai-generation-widgets
+                        preview,  # dashboard-preview
+                        dashboard_id,  # deployed-dashboard-id
+                        True,  # ai-progress-interval (disabled)
+                        None,  # ai-last-update
+                        dashboard_config,  # current-dashboard-config
+                        dashboard_name  # current-dashboard-name
+                    )
+                    
+                    print(f"✅ Successfully prepared return values, returning to Dash...")
+                    print(f"   📊 Return values summary:")
+                    print(f"      - Status: {type(return_values[0]).__name__}")
+                    print(f"      - Progress: Empty string")
+                    print(f"      - Preview: {type(return_values[4]).__name__}")
+                    print(f"      - Dashboard ID: {return_values[5]}")
+                    print(f"      - Interval disabled: {return_values[6]}")
+                    return return_values
+                    
+                except Exception as return_error:
+                    print(f"❌ Error preparing return values: {return_error}")
+                    import traceback
+                    traceback.print_exc()
+                    # Return error state
+                    return dbc.Alert(f"Error displaying results: {str(return_error)}", color="danger"), "", no_update, no_update, "", None, True, None, None, None
             
             elif status_value == 'error':
                 # Get error message and disable polling

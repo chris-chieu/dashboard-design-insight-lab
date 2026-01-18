@@ -32,6 +32,9 @@ def create_bar_chart_widget(
     
     if widget_name is None:
         widget_name = f"bar_{y_column}_{x_column}".lower()
+        # Databricks enforces max 63 characters for widget names
+        if len(widget_name) > 63:
+            widget_name = widget_name[:63]
     
     # Generate user-friendly default title if not provided
     if not title:

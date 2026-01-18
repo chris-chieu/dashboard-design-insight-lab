@@ -121,8 +121,13 @@ def create_table_widget(title: str, visible_columns: List[str], dataset_name: st
             })
             invisible_order += 1
     
+    # Generate widget name and enforce max 63 characters (Databricks limit)
+    widget_name = f"table_{title.replace(' ', '_').lower()}"
+    if len(widget_name) > 63:
+        widget_name = widget_name[:63]
+    
     widget_config = {
-        "name": f"table_{title.replace(' ', '_').lower()}",
+        "name": widget_name,
         "queries": [
             {
                 "name": "main_query",

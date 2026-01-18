@@ -61,9 +61,9 @@ try:
     from pages.new_dashboard.new_dashboard_infusion_callbacks import register_new_dashboard_infusion_callbacks
     print("✅ Page layouts imported successfully")
     
-    print("📦 Importing manual dashboard config...")
-    from dashboard_management_functions import register_manual_config_callbacks
-    print("✅ Manual dashboard config imported successfully")
+    # print("📦 Importing manual dashboard config...")
+    # from dashboard_management_functions import register_manual_config_callbacks
+    # print("✅ Manual dashboard config imported successfully")
     
 except Exception as e:
     print(f"❌ CRITICAL ERROR during imports: {e}", file=sys.stderr)
@@ -80,7 +80,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<databricks_token>'
+DATABRICKS_TOKEN = '<insert your token here>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -571,9 +571,9 @@ print("📋 Registering new dashboard infusion callbacks...")
 register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_client, llm_client)
 print("✅ New dashboard infusion callbacks registered")
 
-print("📋 Registering manual dashboard configuration callbacks...")
-register_manual_config_callbacks(app, datasets, dashboard_manager)
-print("✅ Manual dashboard configuration callbacks registered")
+# print("📋 Registering manual dashboard configuration callbacks...")
+# register_manual_config_callbacks(app, datasets, dashboard_manager)
+# print("✅ Manual dashboard configuration callbacks registered")
 
 print("📋 Registering test function page callbacks...")
 register_test_function_callbacks(app, llm_client)

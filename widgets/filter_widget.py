@@ -21,8 +21,13 @@ def create_filter_widget(filter_column: str, dataset_name: str = "39a5402c", das
     # Generate unique query name
     query_name = f"dashboards/{dashboard_id}/datasets/{dataset_name}_{filter_column}"
     
+    # Generate widget name and enforce max 63 characters (Databricks limit)
+    widget_name = f"filter_{filter_column.lower()}"
+    if len(widget_name) > 63:
+        widget_name = widget_name[:63]
+    
     widget_config = {
-        "name": f"filter_{filter_column.lower()}",
+        "name": widget_name,
         "queries": [
             {
                 "name": query_name,

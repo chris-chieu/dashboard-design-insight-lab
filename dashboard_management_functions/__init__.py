@@ -14,7 +14,7 @@ from .design_infusion import (
     generate_design_with_analysis,
     refine_design_from_feedback
 )
-from .manual_dashboard_config import register_manual_config_callbacks
+# from .manual_dashboard_config import register_manual_config_callbacks
 
 __all__ = [
     'DashboardManager',
@@ -24,6 +24,6 @@ __all__ = [
     'analyze_dashboard_layout',
     'generate_design_with_analysis',
     'refine_design_from_feedback',
-    'register_manual_config_callbacks'
+    # 'register_manual_config_callbacks'
 ]
 
