@@ -25,9 +25,17 @@ def create_counter_widget(value_column, aggregation, dataset_name, title=None):
     widget_name = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
     
     # Build aggregation expression
+    # For metric views, "NONE" means use MEASURE() directly without aggregation
     agg_lower = aggregation.lower()
-    field_name = f"{agg_lower}({value_column})"
-    expression = f"{aggregation.upper()}(`{value_column}`)"
+    
+    if agg_lower == 'none':
+        # Metric view: use MEASURE() directly
+        field_name = f"measure({value_column})"
+        expression = f"MEASURE(`{value_column}`)"
+    else:
+        # Regular table: use aggregation function
+        field_name = f"{agg_lower}({value_column})"
+        expression = f"{aggregation.upper()}(`{value_column}`)"
     
     # Generate user-friendly default title if not provided
     if not title:
@@ -37,13 +45,14 @@ def create_counter_widget(value_column, aggregation, dataset_name, title=None):
             'sum': 'Total',
             'avg': 'Average',
             'max': 'Maximum',
-            'min': 'Minimum'
+            'min': 'Minimum',
+            'none': ''  # For metric views, no prefix needed
         }.get(agg_lower, agg_lower.title())
         
         # Convert column name to readable format (replace underscores with spaces, title case)
         column_display = value_column.replace('_', ' ').title()
         
-        title = f"{agg_display} {column_display}"
+        title = f"{agg_display} {column_display}".strip()
     
     widget = {
         "name": widget_name,

@@ -41,28 +41,41 @@ def create_bar_chart_widget(
             'sum': 'Total',
             'avg': 'Average',
             'max': 'Maximum',
-            'min': 'Minimum'
+            'min': 'Minimum',
+            'none': ''  # For metric views, no prefix needed
         }.get(y_aggregation.lower(), y_aggregation.title())
         
         # Convert column names to readable format
         x_display = x_column.replace('_', ' ').title()
         y_display = y_column.replace('_', ' ').title()
         
-        title = f"{agg_display} {x_display} by {y_display}"
+        if agg_display:
+            title = f"{agg_display} {x_display} by {y_display}"
+        else:
+            title = f"{x_display} by {y_display}"
     
     # Build aggregation expression
-    agg_field_name = f"{y_aggregation.lower()}({x_column})"
-    if y_aggregation.upper() == "COUNT":
+    # For metric views, "NONE" means use MEASURE() directly
+    if y_aggregation.upper() == "NONE":
+        agg_field_name = f"measure({x_column})"
+        agg_expression = f"MEASURE(`{x_column}`)"
+    elif y_aggregation.upper() == "COUNT":
+        agg_field_name = f"{y_aggregation.lower()}({x_column})"
         agg_expression = f"COUNT(`{x_column}`)"
     elif y_aggregation.upper() == "SUM":
+        agg_field_name = f"{y_aggregation.lower()}({x_column})"
         agg_expression = f"SUM(`{x_column}`)"
     elif y_aggregation.upper() == "AVG":
+        agg_field_name = f"{y_aggregation.lower()}({x_column})"
         agg_expression = f"AVG(`{x_column}`)"
     elif y_aggregation.upper() == "MAX":
+        agg_field_name = f"{y_aggregation.lower()}({x_column})"
         agg_expression = f"MAX(`{x_column}`)"
     elif y_aggregation.upper() == "MIN":
+        agg_field_name = f"{y_aggregation.lower()}({x_column})"
         agg_expression = f"MIN(`{x_column}`)"
     else:
+        agg_field_name = f"{y_aggregation.lower()}({x_column})"
         agg_expression = f"COUNT(`{x_column}`)"
     
     # Build query fields

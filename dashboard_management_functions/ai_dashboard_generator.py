@@ -108,11 +108,42 @@ def generate_dashboard_background(
         }
         time.sleep(0.3)
         
+        # Check if this is a metric view (has asset_name instead of queryLines)
+        is_metric_view = 'asset_name' in dataset
+        
         # Build LLM prompt to analyze user request and suggest widgets
         # Format columns with types if available
         if columns_types and isinstance(columns_types, list):
+            # Separate measure and dimension columns for metric views
+            measure_columns = [col['name'] for col in columns_types if col.get('is_measure', False)]
+            dimension_columns = [col['name'] for col in columns_types if not col.get('is_measure', False)]
+            
             columns_with_types_str = ', '.join([f"{col['name']} ({col['type']})" for col in columns_types])
-            columns_info = f"""Available columns with types: {columns_with_types_str}
+            
+            if is_metric_view and measure_columns:
+                columns_info = f"""⚠️ THIS IS A METRIC VIEW - SPECIAL RULES APPLY ⚠️
+
+Available columns with types: {columns_with_types_str}
+
+🔴 CRITICAL METRIC VIEW RULES:
+1. **MEASURE COLUMNS** (pre-aggregated): {', '.join(measure_columns)}
+   - These are ALREADY AGGREGATED metrics
+   - For counters: Use aggregation "NONE" (not SUM/AVG/etc.)
+   - For charts: Use aggregation "NONE" (not SUM/AVG/etc.)
+   - The MEASURE() function will be applied automatically
+   
+2. **DIMENSION COLUMNS** (for grouping): {', '.join(dimension_columns)}
+   - Use these for: filtering, grouping (x_column, y_column, color_column in charts)
+   - Use these for: COUNT aggregations only
+   
+3. **Examples for Metric View**:
+   - Counter: {{"value_column": "total_revenue", "aggregation": "NONE", "label": "Total Revenue"}}
+   - Bar Chart: {{"x_column": "total_revenue", "y_column": "region", "aggregation": "NONE", "title": "Revenue by Region"}}
+   - Line Chart: {{"x_column": "date", "y_column": "total_revenue", "aggregation": "NONE", "time_granularity": "DAY", "title": "Revenue Trend"}}
+   
+DO NOT use SUM/AVG/MAX/MIN on measure columns - they are already aggregated!"""
+            else:
+                columns_info = f"""Available columns with types: {columns_with_types_str}
 
 CRITICAL: Use the column types to help you decide which columns to use:
 - NUMERICAL types (bigint, double, decimal, int, float): Use for SUM/AVG/MAX/MIN aggregations in counters, bar charts, line charts
@@ -904,4 +935,3 @@ EXAMPLES:
             "error_type": type(e).__name__,
             "error_message": str(e)
         }
-

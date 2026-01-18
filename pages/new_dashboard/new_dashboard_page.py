@@ -51,7 +51,12 @@ def get_new_dashboard_layout(unity_catalog="christophe_chieu", unity_schema="cer
         # AI Dashboard Generator Section
         dbc.Row([
             dbc.Col([
-                html.Div(id='ai-dashboard-generator-section')
+                html.Div(id='ai-dashboard-generator-section'),
+                # Always include these elements to prevent callback errors when switching pages
+                html.Div(id='ai-generation-status'),
+                html.Div(id='ai-generation-progress'),
+                html.Div(id='ai-generation-reasoning'),
+                html.Div(id='ai-generation-widgets')
             ], width=12)
         ]),
         
@@ -231,46 +236,85 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
         prevent_initial_call=True
     )
     def display_table_columns(selected_table):
-        """Display columns for the selected Unity Catalog table"""
+        """Display columns for the selected Unity Catalog table with descriptions"""
         if not selected_table:
             return ""
         
         try:
-            columns, sql_query = get_table_columns(workspace_client, selected_table)
+            columns, sql_query, table_comment, is_metric_view = get_table_columns(workspace_client, selected_table)
             
             if not columns:
                 return dbc.Alert("⚠️ Could not retrieve columns from this table", color="warning")
             
-            # Create a table displaying column names and types
-            column_rows = [
-                html.Tr([
-                    html.Td(col['name'], style={'fontWeight': 'bold', 'padding': '8px'}),
-                    html.Td(
-                        dbc.Badge(col['type'], color="info"),
-                        style={'padding': '8px'}
-                    )
-                ])
-                for col in columns
-            ]
+            # Add metric view indicator if applicable
+            if is_metric_view:
+                print(f"📊 Metric View detected: {selected_table}")
+                metric_view_badge = dbc.Badge("Metric View", color="primary", className="ms-2")
+            
+            # Store columns data in a dcc.Store for filtering
+            columns_store = dcc.Store(id='uc-columns-store', data=columns)
+            
+            # Create column cards for display
+            column_cards = []
+            for col in columns:
+                # Determine badge color based on measure vs dimension
+                if col.get('is_measure', False):
+                    type_badge = dbc.Badge("MEASURE", color="warning", className="ms-2", style={'fontSize': '11px'})
+                else:
+                    type_badge = dbc.Badge(col['type'], color="info", className="ms-2", style={'fontSize': '11px'})
+                
+                column_cards.append(
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.Div([
+                                html.Strong(col['name'], style={'fontSize': '14px'}),
+                                type_badge
+                            ], className="mb-2"),
+                            html.P(col['comment'], style={'fontSize': '12px', 'color': '#6C757D', 'marginBottom': '0'})
+                        ], style={'padding': '10px'})
+                    ], className="mb-2", style={'border': '1px solid #dee2e6'})
+                )
             
             return dbc.Row([
                 dbc.Col([
                     dbc.Card([
-                        dbc.CardHeader(html.H6(f"Columns in {selected_table.split('.')[-1]}")),
                         dbc.CardBody([
-                            html.P(f"Total columns: {len(columns)}", className="fw-bold mb-3"),
+                            # Table Name with Metric View badge
                             html.Div([
-                                dbc.Table([
-                                    html.Thead([
-                                        html.Tr([
-                                            html.Th("Column Name", style={'width': '50%'}),
-                                            html.Th("Data Type", style={'width': '50%'})
-                                        ])
-                                    ]),
-                                    html.Tbody(column_rows)
-                                ], bordered=True, hover=True, size='sm', style={'fontSize': '13px'})
-                            ], style={'maxHeight': '400px', 'overflowY': 'auto'}),
+                                html.H5(selected_table.split('.')[-1], className="mb-2 d-inline", style={'fontWeight': '600'}),
+                                metric_view_badge if is_metric_view else None
+                            ], className="mb-2"),
+                            
+                            # Table Description
+                            html.P(table_comment, className="mb-3", style={'fontSize': '14px', 'color': '#495057'}),
+                            
                             html.Hr(),
+                            
+                            # Search Bar
+                            dbc.Input(
+                                id='column-search-input',
+                                placeholder="🔍 Search columns by name...",
+                                type="text",
+                                className="mb-3",
+                                style={'fontSize': '14px'}
+                            ),
+                            
+                            # Column Count
+                            html.P([
+                                html.Strong(f"Total Columns: {len(columns)}", style={'fontSize': '13px'}),
+                                html.Span(id='filtered-column-count', style={'marginLeft': '10px', 'fontSize': '13px', 'color': '#6C757D'})
+                            ], className="mb-3"),
+                            
+                            # Columns Display (scrollable)
+                            html.Div(
+                                id='filtered-columns-display',
+                                children=column_cards,
+                                style={'maxHeight': '400px', 'overflowY': 'auto', 'paddingRight': '10px'}
+                            ),
+                            
+                            html.Hr(className="mt-3"),
+                            
+                            # Confirm Button
                             html.Div([
                                 dbc.Button(
                                     "Confirm & Proceed to AI Dashboard Generation",
@@ -282,12 +326,65 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                             ], className="text-center")
                         ])
                     ], className="mt-3")
-                ], width=8)
+                ], width=10),
+                
+                # Hidden store for columns data
+                columns_store
             ])
             
         except Exception as e:
             print(f"Error displaying columns: {e}")
             return dbc.Alert(f"❌ Error: {str(e)}", color="danger")
+    
+    
+    @callback(
+        [Output('filtered-columns-display', 'children'),
+         Output('filtered-column-count', 'children')],
+        [Input('column-search-input', 'value'),
+         Input('uc-columns-store', 'data')],
+        prevent_initial_call=True
+    )
+    def filter_columns_by_search(search_text, columns_data):
+        """Filter columns based on search input"""
+        if not columns_data:
+            return [], ""
+        
+        # If no search text, show all columns
+        if not search_text:
+            filtered_columns = columns_data
+        else:
+            # Filter columns by name (case-insensitive)
+            search_lower = search_text.lower()
+            filtered_columns = [
+                col for col in columns_data 
+                if search_lower in col['name'].lower()
+            ]
+        
+        # Create column cards for filtered results
+        column_cards = []
+        for col in filtered_columns:
+            # Determine badge color based on measure vs dimension
+            if col.get('is_measure', False):
+                type_badge = dbc.Badge("MEASURE", color="warning", className="ms-2", style={'fontSize': '11px'})
+            else:
+                type_badge = dbc.Badge(col['type'], color="info", className="ms-2", style={'fontSize': '11px'})
+            
+            column_cards.append(
+                dbc.Card([
+                    dbc.CardBody([
+                        html.Div([
+                            html.Strong(col['name'], style={'fontSize': '14px'}),
+                            type_badge
+                        ], className="mb-2"),
+                        html.P(col['comment'], style={'fontSize': '12px', 'color': '#6C757D', 'marginBottom': '0'})
+                    ], style={'padding': '10px'})
+                ], className="mb-2", style={'border': '1px solid #dee2e6'})
+            )
+        
+        # Show count if filtered
+        count_text = f"(showing {len(filtered_columns)} of {len(columns_data)})" if search_text else ""
+        
+        return column_cards, count_text
     
     
     @callback(
@@ -319,12 +416,18 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
         try:
             from utils import create_dataset_from_table
             
-            # Get columns with types
-            columns_info, sql_query = get_table_columns(workspace_client, selected_table)
+            # Get columns with types, comments, and metric view info
+            columns_info, sql_query, table_comment, is_metric_view = get_table_columns(workspace_client, selected_table)
             
             if not columns_info:
                 error_alert = dbc.Alert("❌ Could not retrieve columns from table", color="danger")
                 return no_update, no_update, no_update, error_alert
+            
+            # Log metric view info
+            if is_metric_view:
+                measure_count = sum(1 for col in columns_info if col.get('is_measure', False))
+                dimension_count = len(columns_info) - measure_count
+                print(f"📊 Metric View: {measure_count} measures, {dimension_count} dimensions")
             
             # TEST QUERY PERMISSIONS: Test if user has access to the table
             print(f"🔒 Testing permissions for table: {selected_table}")
@@ -482,15 +585,8 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                 size="md"
                             )
                         ], width=4, className="text-center")
-                    ]),
-                    dbc.Row([
-                        dbc.Col([
-                            html.Div(id='ai-generation-status', className="mt-3"),
-                            html.Div(id='ai-generation-progress'),  # Progress steps with spinner
-                            html.Div(id='ai-generation-reasoning'),  # Separate reasoning display
-                            html.Div(id='ai-generation-widgets')  # Separate widget details display
-                        ], width=8)
                     ])
+                    # Note: ai-generation-status, progress, reasoning, widgets are now in the initial layout
                 ])
             ], className="mb-4")
             
@@ -523,12 +619,17 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
          State('extracted-columns', 'data'),
          State('extracted-columns-types', 'data'),
          State('uc-dataset-store', 'data'),
-         State('infusion-design-data', 'data')],
+         State('infusion-design-data', 'data'),
+         State('active-page', 'data')],
         prevent_initial_call=True
     )
-    def start_ai_dashboard_generation(n_clicks, prompt, all_columns, columns_types, uc_dataset, infusion_data):
+    def start_ai_dashboard_generation(n_clicks, prompt, all_columns, columns_types, uc_dataset, infusion_data, active_page):
         """Start AI dashboard generation in background thread"""
         import uuid
+        
+        # If we're not on the new dashboard page, don't do anything
+        if active_page != 'new-dashboard':
+            return no_update, no_update, no_update, no_update, no_update, no_update
         
         if not n_clicks or n_clicks == 0:
             return None, True, "", "", "", ""
@@ -607,12 +708,17 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
         [State('ai-generation-session', 'data'),
          State('ai-last-update', 'data'),
          State('ai-generation-reasoning', 'children'),
-         State('ai-generation-widgets', 'children')],
+         State('ai-generation-widgets', 'children'),
+         State('active-page', 'data')],
         prevent_initial_call=True
     )
-    def poll_ai_generation_progress(n_intervals, session_id, last_update, current_reasoning, current_widgets):
+    def poll_ai_generation_progress(n_intervals, session_id, last_update, current_reasoning, current_widgets, active_page):
         """Poll for AI generation progress and update UI"""
         try:
+            # If we're not on the new dashboard page, don't update anything
+            if active_page != 'new-dashboard':
+                return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+            
             # Check for timeout (max_intervals reached)
             if n_intervals and n_intervals >= 300:
                 error = dbc.Alert("⚠️ Dashboard generation timed out after 2.5 minutes", color="warning")
@@ -796,11 +902,16 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
          Output('ai-generation-progress', 'children', allow_duplicate=True)],
         Input('delete-dashboard-btn', 'n_clicks'),
         [State('deployed-dashboard-id', 'data'),
-         State('deploy-dashboard-name', 'value')],
+         State('deploy-dashboard-name', 'value'),
+         State('active-page', 'data')],
         prevent_initial_call=True
     )
-    def delete_dashboard_callback(n_clicks, dashboard_id, dashboard_name):
+    def delete_dashboard_callback(n_clicks, dashboard_id, dashboard_name, active_page):
         """Callback to delete dashboard from Databricks (New Dashboard page)"""
+        # If we're not on the new dashboard page, don't do anything
+        if active_page != 'new-dashboard':
+            return no_update, no_update, no_update, no_update, no_update, no_update
+        
         # Only proceed if button was actually clicked
         if not n_clicks or n_clicks < 1:
             from dash.exceptions import PreventUpdate

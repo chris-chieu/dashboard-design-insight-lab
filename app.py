@@ -80,7 +80,7 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<insert your token here>'
+DATABRICKS_TOKEN = '<databricks_token>'
 DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
 WAREHOUSE_ID = "8baced1ff014912d"
 UNITY_CATALOG = "christophe_chieu"
@@ -260,13 +260,24 @@ app.layout = html.Div([
                 ], style={'padding': '24px 0 16px 0'}),
                 html.Hr(style={'margin': '0 0 24px 0', 'borderColor': '#E0E5E8'}),
                 
-                # Dynamic content area - Initial page loaded on startup
-                html.Div(
-                    id='page-content',
-                    children=[  # Initial content for first load
-                        get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA)
-                    ]
-                )
+                # All pages loaded at once - toggle visibility based on navigation
+                html.Div([
+                    html.Div(
+                        id='new-dashboard-page',
+                        children=get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
+                        style={'display': 'block'}  # Visible by default
+                    ),
+                    html.Div(
+                        id='existing-dashboard-page',
+                        children=get_existing_dashboard_layout(),
+                        style={'display': 'none'}  # Hidden by default
+                    ),
+                    html.Div(
+                        id='layout-analyzer-page',
+                        children=get_test_function_layout(),
+                        style={'display': 'none'}  # Hidden by default
+                    )
+                ], id='page-content')
             ], fluid=True)
         ], width=10, style={'marginLeft': '240px', 'padding': '0'}),
     ], style={'margin': '0'}),
@@ -574,7 +585,9 @@ print("✅ Test function page callbacks registered")
 # ============================================================================
 
 @callback(
-    [Output('page-content', 'children'),
+    [Output('new-dashboard-page', 'style'),
+     Output('existing-dashboard-page', 'style'),
+     Output('layout-analyzer-page', 'style'),
      Output('active-page', 'data'),
      Output('nav-new-dashboard', 'className'),
      Output('nav-existing-dashboard', 'className'),
@@ -586,7 +599,7 @@ print("✅ Test function page callbacks registered")
     prevent_initial_call=False
 )
 def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
-    """Handle sidebar navigation"""
+    """Handle sidebar navigation by toggling page visibility"""
     from dash import callback_context
     
     try:
@@ -594,7 +607,9 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
         if not callback_context.triggered:
             print("🔄 Navigation: Initial page load - showing New Dashboard")
             return (
-                get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
+                {'display': 'block'},  # new-dashboard-page visible
+                {'display': 'none'},   # existing-dashboard-page hidden
+                {'display': 'none'},   # layout-analyzer-page hidden
                 'new-dashboard',
                 'w-100 text-start mb-2 nav-link-btn active',
                 'w-100 text-start mb-2 nav-link-btn',
@@ -606,7 +621,9 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
         
         if trigger_id == 'nav-new-dashboard':
             return (
-                get_new_dashboard_layout(UNITY_CATALOG, UNITY_SCHEMA),
+                {'display': 'block'},  # new-dashboard-page visible
+                {'display': 'none'},   # existing-dashboard-page hidden
+                {'display': 'none'},   # layout-analyzer-page hidden
                 'new-dashboard',
                 'w-100 text-start mb-2 nav-link-btn active',
                 'w-100 text-start mb-2 nav-link-btn',
@@ -614,7 +631,9 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
             )
         elif trigger_id == 'nav-existing-dashboard':
             return (
-                get_existing_dashboard_layout(),
+                {'display': 'none'},   # new-dashboard-page hidden
+                {'display': 'block'},  # existing-dashboard-page visible
+                {'display': 'none'},   # layout-analyzer-page hidden
                 'existing-dashboard',
                 'w-100 text-start mb-2 nav-link-btn',
                 'w-100 text-start mb-2 nav-link-btn active',
@@ -622,7 +641,9 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
             )
         elif trigger_id == 'nav-layout-analyzer':
             return (
-                get_test_function_layout(),
+                {'display': 'none'},   # new-dashboard-page hidden
+                {'display': 'none'},   # existing-dashboard-page hidden
+                {'display': 'block'},  # layout-analyzer-page visible
                 'layout-analyzer',
                 'w-100 text-start mb-2 nav-link-btn',
                 'w-100 text-start mb-2 nav-link-btn',
@@ -631,14 +652,14 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
         
         # Fallback (shouldn't happen)
         print("⚠️ Navigation: No matching trigger, using no_update")
-        return no_update, no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
         
     except Exception as e:
         print(f"❌ Navigation callback error: {e}")
         import traceback
         traceback.print_exc()
         # Return no_update on error to prevent breaking the UI
-        return no_update, no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 print("✅ Sidebar navigation callback registered")
 

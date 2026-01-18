@@ -39,28 +39,41 @@ def create_pivot_widget(
             'sum': 'Total',
             'avg': 'Average',
             'max': 'Maximum',
-            'min': 'Minimum'
+            'min': 'Minimum',
+            'none': ''  # For metric views, no prefix needed
         }.get(aggregation.lower(), aggregation.title())
         
         # Convert column names to readable format
         value_display = value_column.replace('_', ' ').title()
         row_display = ', '.join([col.replace('_', ' ').title() for col in row_columns])
         
-        title = f"{agg_display} {value_display} by {row_display}"
+        if agg_display:
+            title = f"{agg_display} {value_display} by {row_display}"
+        else:
+            title = f"{value_display} by {row_display}"
     
     # Build aggregation expression
-    agg_field_name = f"{aggregation.lower()}({value_column})"
-    if aggregation.upper() == "COUNT":
+    # For metric views, "NONE" means use MEASURE() directly
+    if aggregation.upper() == "NONE":
+        agg_field_name = f"measure({value_column})"
+        agg_expression = f"MEASURE(`{value_column}`)"
+    elif aggregation.upper() == "COUNT":
+        agg_field_name = f"{aggregation.lower()}({value_column})"
         agg_expression = f"COUNT(`{value_column}`)"
     elif aggregation.upper() == "SUM":
+        agg_field_name = f"{aggregation.lower()}({value_column})"
         agg_expression = f"SUM(`{value_column}`)"
     elif aggregation.upper() == "AVG":
+        agg_field_name = f"{aggregation.lower()}({value_column})"
         agg_expression = f"AVG(`{value_column}`)"
     elif aggregation.upper() == "MAX":
+        agg_field_name = f"{aggregation.lower()}({value_column})"
         agg_expression = f"MAX(`{value_column}`)"
     elif aggregation.upper() == "MIN":
+        agg_field_name = f"{aggregation.lower()}({value_column})"
         agg_expression = f"MIN(`{value_column}`)"
     else:
+        agg_field_name = f"{aggregation.lower()}({value_column})"
         agg_expression = f"SUM(`{value_column}`)"
     
     # Build query fields - row columns first, then aggregated value

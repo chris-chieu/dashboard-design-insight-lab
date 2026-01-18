@@ -43,13 +43,17 @@ def create_line_chart_widget(
             'sum': 'Total',
             'avg': 'Average',
             'max': 'Maximum',
-            'min': 'Minimum'
+            'min': 'Minimum',
+            'none': ''  # For metric views, no prefix needed
         }.get(y_aggregation.lower(), y_aggregation.title())
         
         # Convert column names to readable format
         y_display = y_column.replace('_', ' ').title()
         
-        title = f"{agg_display} {y_display} Over Time"
+        if agg_display:
+            title = f"{agg_display} {y_display} Over Time"
+        else:
+            title = f"{y_display} Over Time"
     
     # Build time field with DATE_TRUNC
     time_granularity_upper = time_granularity.upper()
@@ -57,18 +61,27 @@ def create_line_chart_widget(
     time_expression = f'DATE_TRUNC("{time_granularity_upper}", `{x_column}`)'
     
     # Build aggregation expression
-    agg_field_name = f"{y_aggregation.lower()}({y_column})"
-    if y_aggregation.upper() == "COUNT":
+    # For metric views, "NONE" means use MEASURE() directly
+    if y_aggregation.upper() == "NONE":
+        agg_field_name = f"measure({y_column})"
+        agg_expression = f"MEASURE(`{y_column}`)"
+    elif y_aggregation.upper() == "COUNT":
+        agg_field_name = f"{y_aggregation.lower()}({y_column})"
         agg_expression = f"COUNT(`{y_column}`)"
     elif y_aggregation.upper() == "SUM":
+        agg_field_name = f"{y_aggregation.lower()}({y_column})"
         agg_expression = f"SUM(`{y_column}`)"
     elif y_aggregation.upper() == "AVG":
+        agg_field_name = f"{y_aggregation.lower()}({y_column})"
         agg_expression = f"AVG(`{y_column}`)"
     elif y_aggregation.upper() == "MAX":
+        agg_field_name = f"{y_aggregation.lower()}({y_column})"
         agg_expression = f"MAX(`{y_column}`)"
     elif y_aggregation.upper() == "MIN":
+        agg_field_name = f"{y_aggregation.lower()}({y_column})"
         agg_expression = f"MIN(`{y_column}`)"
     else:
+        agg_field_name = f"{y_aggregation.lower()}({y_column})"
         agg_expression = f"COUNT(`{y_column}`)"
     
     # Build query fields

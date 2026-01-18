@@ -37,7 +37,7 @@ def list_tables_from_schema(workspace_client: WorkspaceClient, catalog: str, sch
         return []
 
 
-def get_table_columns(workspace_client: WorkspaceClient, full_table_name: str) -> Tuple[List[Dict[str, str]], str]:
+def get_table_columns(workspace_client: WorkspaceClient, full_table_name: str) -> Tuple[List[Dict[str, str]], str, str, bool]:
     """
     Get column information for a Unity Catalog table
     
@@ -46,38 +46,66 @@ def get_table_columns(workspace_client: WorkspaceClient, full_table_name: str) -
         full_table_name: Full table name in format 'catalog.schema.table'
         
     Returns:
-        Tuple of (list of column info dicts with 'name' and 'type', SQL query string)
+        Tuple of (list of column info dicts with 'name', 'type', 'comment', and 'is_measure', 
+                  SQL query string, table comment, is_metric_view)
     """
     try:
         # Parse the full table name
         parts = full_table_name.split('.')
         if len(parts) != 3:
-            return [], ""
+            return [], "", "", False
         
         catalog, schema, table = parts
         
         # Get table information
         table_info = workspace_client.tables.get(full_name=full_table_name)
         
-        # Extract column names and types
+        # Extract table comment
+        table_comment = table_info.comment if hasattr(table_info, 'comment') and table_info.comment else "No description available"
+        
+        # Check if this is a metric view by looking for measure columns in type_json metadata
+        is_metric_view = False
         columns = []
         if table_info.columns:
-            columns = [
-                {
+            for col in table_info.columns:
+                col_type = col.type_name if hasattr(col, 'type_name') else col.type_text
+                
+                # Check type_json metadata for metric_view.type
+                is_measure = False
+                if hasattr(col, 'type_json') and col.type_json:
+                    try:
+                        import json
+                        type_data = json.loads(col.type_json) if isinstance(col.type_json, str) else col.type_json
+                        metadata = type_data.get('metadata', {})
+                        metric_view_type = metadata.get('metric_view.type', '')
+                        
+                        if metric_view_type == 'measure':
+                            is_measure = True
+                            is_metric_view = True  # If we find any measure column, it's a metric view
+                            print(f"   📏 Measure column detected: {col.name}")
+                        elif metric_view_type == 'dimension':
+                            print(f"   📐 Dimension column: {col.name}")
+                    except:
+                        pass
+                
+                columns.append({
                     'name': col.name,
-                    'type': col.type_name if hasattr(col, 'type_name') else col.type_text
-                }
-                for col in table_info.columns
-            ]
+                    'type': col_type if col_type and col_type != "NONE" else "MEASURE" if is_measure else "STRING",
+                    'comment': col.comment if hasattr(col, 'comment') and col.comment else "No description available",
+                    'is_measure': is_measure
+                })
+        
+        print(f"📊 Table type: {table_info.table_type if hasattr(table_info, 'table_type') else 'UNKNOWN'}")
+        print(f"📊 Is metric view: {is_metric_view}")
         
         # Create SQL query
         sql_query = f"SELECT * FROM {full_table_name}"
         
-        return columns, sql_query
+        return columns, sql_query, table_comment, is_metric_view
     
     except Exception as e:
         print(f"Error getting columns from {full_table_name}: {e}")
-        return [], ""
+        return [], "", "", False
 
 
 def create_dataset_from_table(workspace_client: WorkspaceClient, full_table_name: str) -> Dict:
@@ -92,7 +120,7 @@ def create_dataset_from_table(workspace_client: WorkspaceClient, full_table_name
         Dataset configuration dictionary matching Databricks dashboard format
     """
     try:
-        columns_info, sql_query = get_table_columns(workspace_client, full_table_name)
+        columns_info, sql_query, table_comment, is_metric_view = get_table_columns(workspace_client, full_table_name)
         
         if not columns_info:
             return None
@@ -107,7 +135,6 @@ def create_dataset_from_table(workspace_client: WorkspaceClient, full_table_name
         dataset_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
         
         # Format SQL query as multi-line for better readability (matching existing format)
-        # Break the query into lines at logical points
         # IMPORTANT: Unity Catalog tables need backticks around each part of the three-part name
         parts = full_table_name.split('.')
         if len(parts) == 3:
@@ -117,20 +144,28 @@ def create_dataset_from_table(workspace_client: WorkspaceClient, full_table_name
             # Fallback if not three parts
             formatted_table = full_table_name
         
-        query_lines = [
-            "SELECT\n",
-            "  *\n",
-            "FROM\n",
-            f"  {formatted_table}\n"
-        ]
-        
-        # Create dataset configuration matching EXACTLY the structure of existing datasets in datasets.py
-        # Only these 3 fields: name, displayName, queryLines
-        dataset = {
-            'name': dataset_id,  # Use short generated ID, not the full table name
-            'displayName': full_table_name.split('.')[-1],  # Just the table name for display
-            'queryLines': query_lines  # Array of query line strings
-        }
+        # For metric views, use asset_name instead of queryLines
+        if is_metric_view:
+            print(f"📊 Creating dataset for METRIC VIEW using asset_name")
+            dataset = {
+                'name': dataset_id,  # Use short generated ID
+                'displayName': full_table_name.split('.')[-1],  # Just the table name for display
+                'asset_name': full_table_name  # Point directly to the metric view
+            }
+        else:
+            # Regular table - use SELECT * with queryLines
+            query_lines = [
+                "SELECT\n",
+                "  *\n",
+                "FROM\n",
+                f"  {formatted_table}\n"
+            ]
+            
+            dataset = {
+                'name': dataset_id,  # Use short generated ID, not the full table name
+                'displayName': full_table_name.split('.')[-1],  # Just the table name for display
+                'queryLines': query_lines  # Array of query line strings
+            }
         
         # Return both the dataset and the columns info (columns info is used separately, not in dataset)
         return dataset
