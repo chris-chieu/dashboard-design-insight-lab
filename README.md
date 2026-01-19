@@ -1,4 +1,4 @@
-# Intelligent Embedded Dashboard
+# Dashboard Design Insight Lab
 
 An AI-powered Dash application that automatically generates Databricks AI/BI dashboards using LLMs. Create beautiful, data-driven dashboards with natural language prompts.
 
@@ -428,10 +428,6 @@ If you'd like to contribute:
 
 For issues or questions:
 - Open an issue on the repository
-- Refer to Databricks documentation:
-  - [Lakeview Dashboards](https://docs.databricks.com/dashboards/lakeview.html)
-  - [MLflow Tracing](https://docs.databricks.com/mlflow/tracking.html)
 
 ---
 
-**Made with ❤️ by a solo developer**
