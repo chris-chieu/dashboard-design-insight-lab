@@ -40,7 +40,7 @@ def get_new_dashboard_layout(unity_catalog="christophe_chieu", unity_schema="cer
                                     placeholder="Select a table to inspect...",
                                     className="mb-3"
                                 )
-                            ], width=6)
+                            ], width=5)  # Reduced from 6 to 5 (approximately 40%)
                         ]),
                         html.Div(id='uc-table-columns-display')
                     ])
@@ -57,7 +57,7 @@ def get_new_dashboard_layout(unity_catalog="christophe_chieu", unity_schema="cer
                 html.Div(id='ai-generation-progress'),
                 html.Div(id='ai-generation-reasoning'),
                 html.Div(id='ai-generation-widgets')
-            ], width=12)
+            ], width=8)  # Reduced from 12 to 8 (approximately 65%)
         ]),
         
         # Widget Selector Section (appears after columns extracted)
@@ -326,7 +326,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                             ], className="text-center")
                         ])
                     ], className="mt-3")
-                ], width=10),
+                ], width=8),  # Reduced from 10 to 8 (approximately 65%)
                 
                 # Hidden store for columns data
                 columns_store
@@ -466,7 +466,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                                 html.Br(),
                                 html.Small(f"Columns detected: {len(column_names)}")
                             ], color="success", className="mb-3")
-                        ], width=6)
+                        ], width=8)  # Changed from 6 to 8 to match prompt textarea width
                     ]),
                     
                     # Design Infusion Section

@@ -25,8 +25,21 @@ def list_tables_from_schema(workspace_client: WorkspaceClient, catalog: str, sch
         # List all tables in the schema
         for table in workspace_client.tables.list(catalog_name=catalog, schema_name=schema):
             full_name = f"{table.catalog_name}.{table.schema_name}.{table.name}"
+            
+            # Map table type to friendly name
+            if table.table_type is None or str(table.table_type).upper() == 'NONE':
+                type_display = "Metrics View"
+            elif 'MANAGED' in str(table.table_type).upper():
+                type_display = "Table"
+            elif 'EXTERNAL' in str(table.table_type).upper():
+                type_display = "External Table"
+            elif 'VIEW' in str(table.table_type).upper():
+                type_display = "View"
+            else:
+                type_display = str(table.table_type)
+            
             tables.append({
-                'label': f"{table.name} ({table.table_type})",
+                'label': f"{table.name} ({type_display})",
                 'value': full_name
             })
         
