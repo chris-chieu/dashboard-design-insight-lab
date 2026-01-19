@@ -825,18 +825,39 @@ EXAMPLES:
         
         # Create preview
         print(f"⏳ Creating preview card with embed URL: {embed_url[:100]}...")
+        
+        # Check current Genie Space status
+        genie_initial_state = False
+        if 'uiSettings' in dashboard_config:
+            genie_space = dashboard_config.get('uiSettings', {}).get('genieSpace', {})
+            genie_initial_state = genie_space.get('isEnabled', False)
+        print(f"   Initial Genie Space state: {genie_initial_state}")
+        
         preview_card = dbc.Card([
             dbc.CardHeader([
                 dbc.Row([
                     dbc.Col([
                         html.H4(f"Generated Dashboard: {dashboard_name}"),
-                        html.A(
-                            "Open Dashboard in New Tab",
-                            href=dashboard_url,
-                            target="_blank",
-                            className="text-decoration-none",
-                            style={'fontSize': '13px'}
-                        )
+                        # URL, ID, and Genie Toggle
+                        html.Div([
+                            html.A(
+                                "URL",
+                                href=dashboard_url,
+                                target="_blank",
+                                className="text-decoration-none me-3",
+                                style={'fontSize': '13px', 'color': '#0066cc', 'fontWeight': '500'}
+                            ),
+                            html.Span(" | ", style={'fontSize': '13px', 'color': '#6c757d'}),
+                            html.Span(f"ID: {dashboard_id}", className="me-3", style={'fontSize': '13px', 'color': '#6c757d'}),
+                            html.Span(" | ", style={'fontSize': '13px', 'color': '#6c757d'}),
+                            html.Span("Genie AI: ", style={'fontSize': '13px', 'color': '#6c757d', 'marginRight': '5px'}),
+                            dbc.Switch(
+                                id='new-dashboard-genie-toggle',
+                                value=genie_initial_state,
+                                className="d-inline-block",
+                                style={'transform': 'scale(0.8)', 'verticalAlign': 'middle'}
+                            )
+                        ], style={'marginTop': '5px'})
                     ], width=7),
                     dbc.Col([
                         dbc.Button("Apply Infusion", id="apply-infusion-btn", color="primary", size="sm", className="me-2"),
@@ -846,6 +867,7 @@ EXAMPLES:
             ]),
             dbc.CardBody([
                 html.Iframe(
+                    id='new-dashboard-iframe',
                     src=embed_url,
                     style={
                         'width': '100%',

@@ -93,10 +93,21 @@ def register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_
                     serialized = json.loads(serialized)
                 
                 updated_config = copy.deepcopy(serialized)
+                
+                # Preserve the original Genie Space setting before replacing uiSettings
+                original_genie_space = None
                 if 'uiSettings' in updated_config:
+                    original_genie_space = updated_config['uiSettings'].get('genieSpace')
+                    print(f"📌 Preserving original Genie Space: {original_genie_space}")
                     del updated_config['uiSettings']
                 
+                # Apply new design uiSettings
                 updated_config['uiSettings'] = design_data['uiSettings']
+                
+                # Restore the original Genie Space setting
+                if original_genie_space:
+                    updated_config['uiSettings']['genieSpace'] = original_genie_space
+                    print(f"✅ Restored Genie Space: isEnabled={original_genie_space.get('isEnabled')}")
                 
                 # Update dashboard
                 dashboard_manager.update_dashboard(dashboard_id, updated_config)
@@ -110,18 +121,39 @@ def register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_
                 workspace_url = workspace_client.config.host
                 dashboard_url = f"{workspace_url}/dashboardsv3/{dashboard_id}"
                 
-                # Create updated preview card
+                # Extract Genie Space setting from updated config
+                ui_settings_data = updated_config.get('uiSettings', {})
+                genie_space = ui_settings_data.get('genieSpace', {})
+                genie_enabled = genie_space.get('isEnabled', False)
+                
+                print(f"📊 After image infusion - uiSettings.genieSpace: isEnabled={genie_enabled}, enablementMode={genie_space.get('enablementMode', 'N/A')}")
+                
+                # Create updated preview card with URL | ID | Genie toggle
                 preview_card = dbc.Card([
                     dbc.CardHeader([
                         dbc.Row([
                             dbc.Col([
-                                html.H4(f"✅ Dashboard Updated: {dashboard_name}"),
-                                html.A(
-                                    "Open Dashboard in New Tab",
-                                    href=dashboard_url,
-                                    target="_blank",
-                                    className="text-muted small d-block mt-1"
-                                )
+                                html.H4(f"Generated Dashboard: {dashboard_name}"),
+                                # URL, ID, and Genie Toggle
+                                html.Div([
+                                    html.A(
+                                        "URL",
+                                        href=dashboard_url,
+                                        target="_blank",
+                                        className="text-decoration-none me-3",
+                                        style={'fontSize': '13px', 'color': '#0066cc', 'fontWeight': '500'}
+                                    ),
+                                    html.Span(" | ", style={'fontSize': '13px', 'color': '#6c757d'}),
+                                    html.Span(f"ID: {dashboard_id}", className="me-3", style={'fontSize': '13px', 'color': '#6c757d'}),
+                                    html.Span(" | ", style={'fontSize': '13px', 'color': '#6c757d'}),
+                                    html.Span("Genie AI: ", style={'fontSize': '13px', 'color': '#6c757d', 'marginRight': '5px'}),
+                                    dbc.Switch(
+                                        id='new-dashboard-genie-toggle',
+                                        value=genie_enabled,
+                                        className="d-inline-block",
+                                        style={'transform': 'scale(0.8)', 'verticalAlign': 'middle'}
+                                    )
+                                ], style={'marginTop': '5px'})
                             ], width=7),
                             dbc.Col([
                                 dbc.Button("Apply Infusion", id="apply-infusion-btn", color="primary", size="sm", className="me-2"),
@@ -131,6 +163,7 @@ def register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_
                     ]),
                     dbc.CardBody([
                         html.Iframe(
+                            id='new-dashboard-iframe',
                             src=new_embed_url_with_refresh,
                             style={
                                 'width': '100%',
@@ -270,11 +303,21 @@ def register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_
             
             updated_config = copy.deepcopy(serialized)
             
-            # Remove old uiSettings and apply new one
+            # Preserve the original Genie Space setting before replacing uiSettings
+            original_genie_space = None
             if 'uiSettings' in updated_config:
+                original_genie_space = updated_config['uiSettings'].get('genieSpace')
+                print(f"📌 Preserving original Genie Space: {original_genie_space}")
                 del updated_config['uiSettings']
             
+            # Apply new design uiSettings
             updated_config['uiSettings'] = ui_settings['uiSettings']
+            
+            # Restore the original Genie Space setting
+            if original_genie_space:
+                updated_config['uiSettings']['genieSpace'] = original_genie_space
+                print(f"✅ Restored Genie Space: isEnabled={original_genie_space.get('isEnabled')}")
+            
             print(f"✅ uiSettings applied to config")
             
             # Update dashboard
@@ -290,18 +333,39 @@ def register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_
             workspace_url = workspace_client.config.host
             dashboard_url = f"{workspace_url}/dashboardsv3/{updated_dashboard_id}"
             
-            # Create preview
+            # Extract Genie Space setting from updated config
+            ui_settings_data = updated_config.get('uiSettings', {})
+            genie_space = ui_settings_data.get('genieSpace', {})
+            genie_enabled = genie_space.get('isEnabled', False)
+            
+            print(f"📊 After infusion - uiSettings.genieSpace: isEnabled={genie_enabled}, enablementMode={genie_space.get('enablementMode', 'N/A')}")
+            
+            # Create preview with URL | ID | Genie toggle (same format as initial generation)
             preview_card = dbc.Card([
                 dbc.CardHeader([
                     dbc.Row([
                         dbc.Col([
-                            html.H4(f"✅ Dashboard Updated: {dashboard_name}"),
-                            html.A(
-                                "🔗 Open Dashboard in New Tab",
-                                href=dashboard_url,
-                                target="_blank",
-                                className="text-muted small d-block mt-1"
-                            )
+                            html.H4(f"Generated Dashboard: {dashboard_name}"),
+                            # URL, ID, and Genie Toggle
+                            html.Div([
+                                html.A(
+                                    "URL",
+                                    href=dashboard_url,
+                                    target="_blank",
+                                    className="text-decoration-none me-3",
+                                    style={'fontSize': '13px', 'color': '#0066cc', 'fontWeight': '500'}
+                                ),
+                                html.Span(" | ", style={'fontSize': '13px', 'color': '#6c757d'}),
+                                html.Span(f"ID: {updated_dashboard_id}", className="me-3", style={'fontSize': '13px', 'color': '#6c757d'}),
+                                html.Span(" | ", style={'fontSize': '13px', 'color': '#6c757d'}),
+                                html.Span("Genie AI: ", style={'fontSize': '13px', 'color': '#6c757d', 'marginRight': '5px'}),
+                                dbc.Switch(
+                                    id='new-dashboard-genie-toggle',
+                                    value=genie_enabled,
+                                    className="d-inline-block",
+                                    style={'transform': 'scale(0.8)', 'verticalAlign': 'middle'}
+                                )
+                            ], style={'marginTop': '5px'})
                         ], width=7),
                         dbc.Col([
                             dbc.Button("Apply Infusion", id="apply-infusion-btn", color="primary", size="sm", className="me-2"),
@@ -311,6 +375,7 @@ def register_new_dashboard_infusion_callbacks(app, dashboard_manager, workspace_
                 ]),
                 dbc.CardBody([
                     html.Iframe(
+                        id='new-dashboard-iframe',
                         src=new_embed_url_with_refresh,
                         style={
                             'width': '100%',

@@ -197,6 +197,8 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
     import threading
     import uuid
     import time
+    import json
+    import copy
     from utils.query_permission_checker import test_dashboard_queries_for_permissions
     from utils import list_tables_from_schema, get_table_columns
     from dash import callback, Output, Input, State, no_update, html
@@ -544,8 +546,7 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
                         dbc.Col([
                             html.Label("Describe your dashboard needs:", className="fw-bold mb-2"),
                             html.P(
-                                "The AI will use the column names and their types to automatically create "
-                                "the most relevant dashboard for your needs.",
+                                "",
                                 className="text-muted small mb-3"
                             ),
                             dcc.Textarea(
@@ -1074,4 +1075,88 @@ def register_new_dashboard_callbacks(app, datasets, llm_client, dashboard_manage
         
         # Call the generate function from design_infusion module
         return generate_design_from_prompt(prompt_text, llm_client)
+    
+    
+    @callback(
+        [Output('new-dashboard-iframe', 'src'),
+         Output('current-dashboard-config', 'data', allow_duplicate=True)],
+        Input('new-dashboard-genie-toggle', 'value'),
+        [State('deployed-dashboard-id', 'data'),
+         State('current-dashboard-config', 'data'),
+         State('current-dashboard-name', 'data')],
+        prevent_initial_call=True
+    )
+    def toggle_new_dashboard_genie(genie_enabled, dashboard_id, dashboard_config, dashboard_name):
+        """
+        Toggle Genie Space enablement for newly generated dashboard and refresh display
+        """
+        try:
+            print(f"🔘 Genie Space toggle callback triggered! Value: {genie_enabled}")
+            print(f"   Dashboard ID: {dashboard_id}")
+            print(f"   Dashboard Name: {dashboard_name}")
+            
+            if not dashboard_id or not dashboard_config:
+                print(f"❌ Missing required data - dashboard_id: {dashboard_id}, dashboard_config: {dashboard_config is not None}")
+                return no_update, no_update
+            
+            print(f"🔄 Toggling Genie Space to: {genie_enabled}")
+            
+            # Extract and parse the serialized dashboard (same as existing dashboard)
+            serialized = dashboard_config.get('serialized_dashboard', {})
+            if isinstance(serialized, str):
+                print("   Parsing serialized config from string...")
+                serialized = json.loads(serialized)
+            
+            # Make a deep copy to avoid mutation
+            updated_config = copy.deepcopy(serialized)
+            
+            # genieSpace is inside uiSettings
+            if 'uiSettings' not in updated_config:
+                updated_config['uiSettings'] = {}
+            
+            if 'genieSpace' not in updated_config['uiSettings']:
+                updated_config['uiSettings']['genieSpace'] = {}
+            
+            # Update genieSpace setting with correct enablementMode
+            updated_config['uiSettings']['genieSpace']['isEnabled'] = genie_enabled
+            if genie_enabled:
+                updated_config['uiSettings']['genieSpace']['enablementMode'] = 'ENABLED'
+            else:
+                updated_config['uiSettings']['genieSpace']['enablementMode'] = 'DISABLED'
+            
+            print(f"✅ Updated uiSettings.genieSpace: isEnabled={genie_enabled}, enablementMode={'ENABLED' if genie_enabled else 'DISABLED'}")
+            
+            # Debug: Show what we're about to send
+            print(f"📤 Sending to Databricks:")
+            print(f"   - uiSettings.genieSpace: {updated_config.get('uiSettings', {}).get('genieSpace')}")
+            print(f"   - Config has {len(updated_config)} top-level keys")
+            
+            # Update dashboard in Databricks
+            print(f"📤 Updating dashboard {dashboard_id} in Databricks...")
+            dashboard_manager.update_dashboard(dashboard_id, updated_config)
+            print(f"✅ Dashboard update complete")
+            
+            # Get new embed URL to refresh the iframe
+            print(f"📤 Getting new embed URL...")
+            new_embed_url = dashboard_manager.get_embed_url(dashboard_id)
+            
+            # Add cache-busting parameter to force iframe refresh
+            cache_buster = f"?_refresh={int(time.time() * 1000)}"
+            new_embed_url_with_refresh = new_embed_url + cache_buster
+            print(f"✅ New embed URL generated: {new_embed_url_with_refresh[:100]}...")
+            
+            # Update the stored config
+            updated_dashboard_config = {
+                'serialized_dashboard': updated_config,
+                'display_name': dashboard_name
+            }
+            
+            print(f"🎉 Genie Space toggle completed successfully, refreshing iframe")
+            return new_embed_url_with_refresh, updated_dashboard_config
+            
+        except Exception as e:
+            print(f"❌ Error toggling Genie Space: {e}")
+            import traceback
+            traceback.print_exc()
+            return no_update, no_update
     
