@@ -19,10 +19,28 @@ This project is open source. Contributions, feedback, and suggestions are welcom
 - Choose relevant columns and aggregations
 - Create optimized visualizations
 - Apply intelligent layouts
+- Support for Unity Catalog tables and Databricks Metric Views
 
 🎨 **Design Infusion**: Customize dashboard appearance by:
 - Uploading a reference image to extract colors and fonts
 - Describing a style (e.g., "Corporate specialised in tech style")
+
+🤖 **Databricks Genie AI Integration**: Enable intelligent natural language querying:
+- Toggle Genie Space on/off for any dashboard
+- Empower users to ask questions in natural language
+- Get AI-powered insights from your dashboard data
+
+📈 **Metrics Discovery**: Automatically analyze existing dashboards to:
+- Discover and list all metrics/KPIs used
+- Extract widget types and visualizations
+- Understand data sources and aggregations
+- Get insights into dashboard structure
+
+📊 **Unity Catalog Integration**:
+- Browse and select tables directly from Unity Catalog
+- View table and column descriptions
+- Search through available columns
+- Automatic support for Metric Views with measure/dimension detection
 
 📊 **Supported Widgets**:
 - Tables with customizable columns
@@ -52,9 +70,13 @@ intelligent-embedded-dashboard/
 │
 ├── pages/                                     # Page layouts and callbacks
 │   ├── new_dashboard/
-│   │   └── new_dashboard_page.py             # New dashboard creation UI
+│   │   ├── new_dashboard_page.py             # New dashboard creation UI
+│   │   └── new_dashboard_infusion_callbacks.py  # Design infusion for new dashboards
 │   └── existing_dashboard/
-│       └── existing_dashboard_page.py        # Dashboard retrieval & management
+│       ├── existing_dashboard_page.py        # Dashboard retrieval & management
+│       ├── existing_dashboard_infusion_callbacks.py  # Design infusion for existing dashboards
+│       ├── metrics_discovery_callbacks.py    # Metrics discovery feature
+│       └── genie_space_callbacks.py          # Genie AI toggle feature
 │
 ├── widgets/                                   # Widget generation modules
 │   ├── table_widget.py                       # Table widgets
@@ -65,9 +87,17 @@ intelligent-embedded-dashboard/
 │   ├── counter.py                            # Counter KPI widgets
 │   └── pie_chart.py                          # Pie chart widgets
 │
-├── datasets.py                                # Dataset configurations
+├── utils/                                     # Utility modules
+│   ├── table_inspector.py                    # Unity Catalog table inspection & metadata
+│   └── query_permission_checker.py           # User permission validation
+│
+├── example_datasets/                          # Example datasets for testing
+│   └── datasets.py                           # Sample dataset configurations
+│
+├── assets/                                    # Static assets (CSS, etc.)
 ├── dataset_filter.py                          # Dataset filtering utilities
 ├── requirements.txt                           # Python dependencies
+├── app.yaml                                   # Databricks Apps configuration
 └── README.md                                  # This file
 ```
 
@@ -75,36 +105,125 @@ intelligent-embedded-dashboard/
 
 ### Create New Dashboard with AI
 
-1. **Select Dataset** → Choose from available datasets (e.g., Customer Support, NYC Taxi)
+1. **Select Unity Catalog Table** → Browse and select from Unity Catalog:
+   - View table and column descriptions
+   - Search through available columns
+   - See column types (including measure/dimension for Metric Views)
+   - Automatic detection of Metric Views
 
-2. **Extract Columns with LLM** → AI analyzes SQL query and extracts available columns
-
-3. **Generate Dashboard with AI** → Enter a natural language prompt:
+2. **Generate Dashboard with AI** → Enter a natural language prompt:
    - *Example*: "I am a customer support manager, create me a dashboard with KPIs relevant to my domain"
    - *Example*: "Create a sales dashboard with revenue trends and top products"
 
-4. **AI Processing** → The AI automatically:
+3. **AI Processing** → The AI automatically:
    - Selects relevant widgets (tables, charts, filters, counters)
    - Chooses appropriate columns and aggregations
-   - Creates visualizations
+   - Creates visualizations with proper handling of Metric Views
    - Generates intelligent layouts
    - Deploys to Databricks
 
-5. **Design Infusion** (Optional) → Customize the dashboard appearance:
+4. **Design Infusion** (Optional) → Customize the dashboard appearance:
    - Upload an image to extract colors and fonts
    - OR describe a style (e.g., "corporate blue theme", "Van Gogh style")
 
-6. **View Dashboard** → Dashboard displays in an embedded iframe with your custom design
+5. **Enable Genie AI** (Optional) → Toggle on Databricks Genie Space:
+   - Allow natural language queries on your dashboard
+   - Empower users to ask questions in plain English
+
+6. **View Dashboard** → Dashboard displays in an embedded iframe with:
+   - Clickable URL link to open in Databricks
+   - Dashboard ID for reference
+   - Genie toggle to enable/disable AI querying
+   - Your custom design (if applied)
 
 ### Manage Existing Dashboards
 
 1. **Enter Dashboard ID** → Input the ID of an existing dashboard
 
-2. **Retrieve Dashboard** → View the dashboard in an embedded iframe
+2. **Retrieve Dashboard** → View the dashboard in an embedded iframe with:
+   - Clickable URL link to open in Databricks
+   - Dashboard name and ID
+   - Current Genie Space status
 
-3. **Apply New Design** (Optional) → Use design infusion to update the look and feel
+3. **Metrics Discovery** → Automatically analyze the dashboard:
+   - View all metrics and KPIs used
+   - See widget types and their configurations
+   - Understand data sources and aggregations
+   - Export metrics list for documentation
 
-4. **Delete Dashboard** (Optional) → Remove the dashboard from Databricks
+4. **Genie AI Toggle** → Enable or disable Databricks Genie Space:
+   - Toggle on to allow natural language queries
+   - Toggle off to disable AI querying
+   - Changes reflect immediately in the dashboard view
+
+5. **Apply New Design** (Optional) → Use design infusion to update the look and feel
+
+6. **Delete Dashboard** (Optional) → Remove the dashboard from Databricks
+
+## Key Features in Detail
+
+### 🤖 Databricks Genie AI Integration
+
+**What is Genie?**
+Databricks Genie Space is an AI-powered conversational interface that allows users to ask questions about their data in natural language.
+
+**How to Use:**
+- Enable Genie toggle when creating a new dashboard or viewing an existing one
+- Users can then ask questions like:
+  - "What were the top 5 products by revenue last quarter?"
+  - "Show me the trend of customer complaints over time"
+  - "Which region has the highest sales growth?"
+- Genie AI interprets the question and generates appropriate queries and visualizations
+
+**Benefits:**
+- Democratizes data access for non-technical users
+- Reduces dependency on SQL knowledge
+- Enables ad-hoc analysis without dashboard modifications
+
+### 📈 Metrics Discovery
+
+**What is Metrics Discovery?**
+An intelligent analysis feature that automatically examines existing dashboards to extract and catalog all metrics, KPIs, and visualizations.
+
+**What It Discovers:**
+- **Metrics & KPIs**: All numerical measures and aggregations
+- **Widget Types**: Tables, charts, filters, counters, etc.
+- **Data Sources**: Unity Catalog tables and datasets used
+- **Aggregations**: SUM, AVG, COUNT, and other calculations
+- **Dimensions**: Grouping and filtering columns
+
+**Use Cases:**
+- **Documentation**: Auto-generate dashboard documentation
+- **Audit**: Understand what metrics are being tracked
+- **Migration**: Identify metrics before recreating dashboards
+- **Discovery**: Learn from existing dashboards to create new ones
+
+**How to Use:**
+1. Navigate to "Existing Dashboard" page
+2. Enter a dashboard ID and retrieve it
+3. Click "Discover Metrics" button
+4. View the comprehensive analysis in the side panel
+
+### 📊 Unity Catalog & Metric Views Support
+
+**Unity Catalog Integration:**
+- Browse catalogs and schemas directly in the app
+- Select tables with rich metadata (descriptions, column comments)
+- Search and filter columns by name
+- View column types and descriptions
+
+**Metric Views Support:**
+The app intelligently handles Databricks Metric Views:
+- **Automatic Detection**: Identifies metric views vs. regular tables
+- **Measure Columns**: Correctly applies `MEASURE()` function for pre-aggregated metrics
+- **Dimension Columns**: Uses for grouping and filtering
+- **Visual Distinction**: Measure columns are marked with an orange badge in the UI
+
+**Benefits:**
+- Seamless integration with your governed data
+- No need to manually write SQL queries
+- Proper handling of different table types
+- Metadata-rich column selection
 
 ## Configuration
 
@@ -218,9 +337,10 @@ Individual users accessing the app need:
 ### DashboardManager
 Unified interface for all dashboard operations:
 - Create and publish dashboards
-- Update existing dashboards
+- Update existing dashboards (including Genie Space configuration)
 - Generate embed URLs
 - Delete dashboards
+- Manage dashboard permissions
 
 ### AI Dashboard Generator
 Intelligent dashboard creation:
@@ -228,12 +348,37 @@ Intelligent dashboard creation:
 - Automatic widget selection
 - Column and aggregation inference
 - Layout optimization
+- Support for Unity Catalog tables and Metric Views
+- Intelligent handling of measure vs. dimension columns
+
+### Unity Catalog Integration
+Browse and select tables with rich metadata:
+- **Table Inspector**: Fetches table and column metadata from Unity Catalog
+- **Permission Checker**: Validates user access to tables before dashboard creation
+- **Metric View Support**: Automatically detects and handles Databricks Metric Views
+- **Column Search**: Filter columns by name for easy selection
+
+### Metrics Discovery
+Intelligent dashboard analysis:
+- Extracts all metrics and KPIs from existing dashboards
+- Identifies widget types and configurations
+- Maps data sources and aggregations
+- Provides structured insights for documentation and audit
+
+### Genie Space Management
+Enable AI-powered natural language querying:
+- Toggle Genie Space on/off for any dashboard
+- Update dashboard configuration programmatically
+- Refresh dashboard view to reflect Genie state
+- Seamless integration with Databricks Genie AI
 
 ### Design Infusion
 Customize dashboard appearance:
 - **Image-based**: Upload a reference image to extract design elements
 - **Prompt-based**: Describe desired style for AI generation
+- **Intelligent Analysis**: AI analyzes dashboard structure before applying design
 - Extracts: background colors, font colors, visualization colors, borders, fonts
+- Preserves Genie Space settings during design updates
 
 ### MLflow Tracing
 Monitor AI dashboard generation:

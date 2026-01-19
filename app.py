@@ -50,10 +50,8 @@ try:
     from pages import (
         get_new_dashboard_layout, 
         get_existing_dashboard_layout,
-        get_test_function_layout,
         register_existing_dashboard_callbacks, 
-        register_new_dashboard_callbacks,
-        register_test_function_callbacks
+        register_new_dashboard_callbacks
     )
     from pages.existing_dashboard.existing_dashboard_infusion_callbacks import register_existing_dashboard_infusion_callbacks
     from pages.existing_dashboard.metrics_discovery_callbacks import register_metrics_discovery_callbacks
@@ -80,11 +78,11 @@ app.config.suppress_callback_exceptions = True
 print("✅ Dash app created with Databricks One styling")
 
 # Configuration - Update these values for your environment
-DATABRICKS_TOKEN = '<insert your token here>'
-DATABRICKS_HOST = "https://e2-demo-field-eng.cloud.databricks.com"
-WAREHOUSE_ID = "8baced1ff014912d"
-UNITY_CATALOG = "christophe_chieu"
-UNITY_SCHEMA = "certified_tables"
+DATABRICKS_TOKEN = ""  # Insert your Databricks personal access token here
+DATABRICKS_HOST = ""  # Insert your Databricks workspace URL (e.g., "https://your-workspace.cloud.databricks.com")
+WAREHOUSE_ID = ""  # Insert your SQL warehouse ID here
+UNITY_CATALOG = ""  # Insert your Unity Catalog name here
+UNITY_SCHEMA = ""  # Insert your schema name here
 LLM_MODEL = "databricks-gpt-5"
 VISION_MODEL = "databricks-gpt-5"
 print(f"✅ Configuration loaded (Host: {DATABRICKS_HOST})")
@@ -217,12 +215,7 @@ app.layout = html.Div([
                     dbc.Button([
                         html.I(className="me-2"),
                         "Existing Dashboard"
-                    ], id="nav-existing-dashboard", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0),
-                    
-                    dbc.Button([
-                        html.I(className="me-2"),
-                        "Layout Analyzer"
-                    ], id="nav-layout-analyzer", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0)
+                    ], id="nav-existing-dashboard", color="link", className="w-100 text-start mb-2 nav-link-btn", n_clicks=0)
                 ])
             ], style={
                 'position': 'fixed',
@@ -270,11 +263,6 @@ app.layout = html.Div([
                     html.Div(
                         id='existing-dashboard-page',
                         children=get_existing_dashboard_layout(),
-                        style={'display': 'none'}  # Hidden by default
-                    ),
-                    html.Div(
-                        id='layout-analyzer-page',
-                        children=get_test_function_layout(),
                         style={'display': 'none'}  # Hidden by default
                     )
                 ], id='page-content')
@@ -575,11 +563,6 @@ print("✅ New dashboard infusion callbacks registered")
 # register_manual_config_callbacks(app, datasets, dashboard_manager)
 # print("✅ Manual dashboard configuration callbacks registered")
 
-print("📋 Registering test function page callbacks...")
-register_test_function_callbacks(app, llm_client)
-print("✅ Test function page callbacks registered")
-
-
 # ============================================================================
 # SIDEBAR NAVIGATION CALLBACK
 # ============================================================================
@@ -587,18 +570,15 @@ print("✅ Test function page callbacks registered")
 @callback(
     [Output('new-dashboard-page', 'style'),
      Output('existing-dashboard-page', 'style'),
-     Output('layout-analyzer-page', 'style'),
      Output('active-page', 'data'),
      Output('nav-new-dashboard', 'className'),
-     Output('nav-existing-dashboard', 'className'),
-     Output('nav-layout-analyzer', 'className')],
+     Output('nav-existing-dashboard', 'className')],
     [Input('nav-new-dashboard', 'n_clicks'),
-     Input('nav-existing-dashboard', 'n_clicks'),
-     Input('nav-layout-analyzer', 'n_clicks')],
+     Input('nav-existing-dashboard', 'n_clicks')],
     [State('active-page', 'data')],
     prevent_initial_call=False
 )
-def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
+def navigate_pages(new_clicks, existing_clicks, active_page):
     """Handle sidebar navigation by toggling page visibility"""
     from dash import callback_context
     
@@ -609,10 +589,8 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
             return (
                 {'display': 'block'},  # new-dashboard-page visible
                 {'display': 'none'},   # existing-dashboard-page hidden
-                {'display': 'none'},   # layout-analyzer-page hidden
                 'new-dashboard',
                 'w-100 text-start mb-2 nav-link-btn active',
-                'w-100 text-start mb-2 nav-link-btn',
                 'w-100 text-start mb-2 nav-link-btn'
             )
         
@@ -623,29 +601,15 @@ def navigate_pages(new_clicks, existing_clicks, analyzer_clicks, active_page):
             return (
                 {'display': 'block'},  # new-dashboard-page visible
                 {'display': 'none'},   # existing-dashboard-page hidden
-                {'display': 'none'},   # layout-analyzer-page hidden
                 'new-dashboard',
                 'w-100 text-start mb-2 nav-link-btn active',
-                'w-100 text-start mb-2 nav-link-btn',
                 'w-100 text-start mb-2 nav-link-btn'
             )
         elif trigger_id == 'nav-existing-dashboard':
             return (
                 {'display': 'none'},   # new-dashboard-page hidden
                 {'display': 'block'},  # existing-dashboard-page visible
-                {'display': 'none'},   # layout-analyzer-page hidden
                 'existing-dashboard',
-                'w-100 text-start mb-2 nav-link-btn',
-                'w-100 text-start mb-2 nav-link-btn active',
-                'w-100 text-start mb-2 nav-link-btn'
-            )
-        elif trigger_id == 'nav-layout-analyzer':
-            return (
-                {'display': 'none'},   # new-dashboard-page hidden
-                {'display': 'none'},   # existing-dashboard-page hidden
-                {'display': 'block'},  # layout-analyzer-page visible
-                'layout-analyzer',
-                'w-100 text-start mb-2 nav-link-btn',
                 'w-100 text-start mb-2 nav-link-btn',
                 'w-100 text-start mb-2 nav-link-btn active'
             )
